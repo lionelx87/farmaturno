@@ -2,8 +2,12 @@
 
 ## Decisiones tecnológicas
 
-**Framework**: Astro
-**Razón**: App de alcance acotado, con un único fetch diario cacheado y una zona de interactividad bien delimitada. La arquitectura de islands de Astro encaja de forma natural con este patrón.
+| Tecnología | Versión | Razón |
+|---|---|---|
+| Astro | 5.17 | App acotada, fetch diario cacheado, islands bien delimitados |
+| React | 19 | Ecosistema más maduro para Google Maps (`@vis.gl/react-google-maps`) |
+| Tailwind CSS | 4.2 | Utility-first, dark mode class-based nativo, integración Vite sin config file |
+| TypeScript | strict | Default de Astro 5, mejor DX y seguridad de tipos |
 
 ---
 
@@ -39,14 +43,49 @@ Esto es posible porque el payload del endpoint ya contiene el rango de fechas co
 
 ## Interactividad (Islands)
 
-La mayor parte de la página es estática. La interactividad queda delimitada a un único island que concentra:
+La mayor parte de la página es estática. La interactividad queda delimitada a un único island React que concentra:
 
 - Selector de fecha con filtrado local
 - Visualización de resultados (nombre, dirección, teléfono)
-- Mapa con pins de ubicación (Google Maps API)
+- Mapa con pins de ubicación (`@vis.gl/react-google-maps`)
+- Ruta desde farmacia seleccionada hasta ubicación del usuario (Google Directions API)
 - Integración con ubicación actual del usuario (Geolocation API)
 
 Este island recibe los datos completos como prop desde Astro y opera de forma autónoma a partir de ahí.
+
+---
+
+## Diseño UI
+
+### Layout general
+
+Pantalla dividida en dos secciones:
+- **Sidebar** (izquierda, desktop): panel fijo con toda la información y controles
+- **Content area** (derecha, desktop): mapa ocupando todo el espacio disponible
+
+### Sidebar — contenido (de arriba hacia abajo)
+
+1. **Header**: ícono + nombre de la app, toggle dark/light
+2. **Selector de fecha**: `‹ Lunes 2 de marzo ›` — flechas para avanzar/retroceder un día. Click en la fecha abre un calendario. Rango limitado a los datos disponibles del endpoint.
+3. **Lista de farmacias**: 3 items con nombre, dirección e ícono de teléfono para llamada directa
+4. **Card de detalle**: debajo de la lista, muestra la farmacia seleccionada con nombre, dirección y teléfono
+
+### Mapa
+
+- Pins de ubicación por cada farmacia de turno
+- Al seleccionar una farmacia, traza la ruta desde ese pin hasta la ubicación actual del usuario
+
+### Diseño responsive (mobile)
+
+El Sidebar se convierte en un **bottom sheet** con dos estados:
+- **Peek**: asomando desde abajo, mostrando la lista de farmacias
+- **Expandido**: cubre ~60-70% de la pantalla, incluye también la card de detalle
+
+El mapa permanece visible e interactuable detrás del bottom sheet en todo momento.
+
+### Tema
+
+Soporte dark/light con toggle en el header del sidebar. Dark mode implementado con clase `dark` en `<html>` y `@custom-variant dark` de Tailwind 4.
 
 ---
 
@@ -61,7 +100,7 @@ Astro Server: ¿hay datos en caché del día?
    └── No → fetch al endpoint externo → cachea → entrega al client island
                                 │
                                 ▼
-                    Client Island (React / framework a definir)
+                    Client Island (React 19)
                         - Filtra por fecha seleccionada (local)
                         - Renderiza farmacias con teléfono
                         - Muestra mapa con pins (Google Maps API)

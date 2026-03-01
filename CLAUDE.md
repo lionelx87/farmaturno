@@ -12,11 +12,12 @@ Aplicación web moderna y responsive que muestra las farmacias de turno de una c
 
 ## Stack tecnológico
 
-- **Framework**: Astro 5 (minimal, sin template)
+- **Framework**: Astro 5.17 (minimal, sin template)
 - **Package manager**: pnpm
-- **Island interactivo**: React (via `astro add react`)
+- **Island interactivo**: React 19 (via `@astrojs/react`)
+- **Estilos**: Tailwind CSS 4.2 (via `@tailwindcss/vite`, sin config file, dark mode class-based)
 - **Mapas**: `@vis.gl/react-google-maps`
-- **Lenguaje**: TypeScript (strict, por defecto en Astro 5)
+- **Lenguaje**: TypeScript strict (por defecto en Astro 5)
 
 ---
 
@@ -51,7 +52,37 @@ Este proyecto busca que el desarrollador entienda y controle cada decisión. Las
 
 ---
 
+## Variables de entorno
+
+- `PHARMACIES_ENDPOINT` — URL del endpoint externo de farmacias de turno
+
+---
+
+## Estructura de carpetas
+
+```
+src/
+├── styles/global.css         ← Tailwind + dark mode variant
+├── layouts/Layout.astro      ← layout base, importa global.css, clase dark en <html>
+├── pages/index.astro         ← única página
+├── components/
+│   ├── PharmacyMap.tsx       ← island React (mapa + wrapper)
+│   └── Sidebar.tsx           ← sidebar desktop / bottom sheet mobile
+├── lib/pharmacies.ts         ← fetch al endpoint + caché diario
+└── types/pharmacy.ts         ← tipos TypeScript del dominio
+```
+
+---
+
+## Mantener documentación actualizada
+
+Al final de cada sesión de trabajo, o ante cualquier decisión técnica relevante, actualizar:
+- `CLAUDE.md` — si cambia el stack, las convenciones o la forma de trabajo
+- `docs/architecture.md` — si cambia el diseño, la UI, o las decisiones de arquitectura
+
+---
+
 ## Archivos clave
 
-- `docs/architecture.md` — decisiones de arquitectura documentadas
+- `docs/architecture.md` — decisiones de arquitectura y diseño UI documentadas
 - `CLAUDE.md` — este archivo
