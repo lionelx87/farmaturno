@@ -136,11 +136,7 @@ function SidebarContent({
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800">
         <div className="flex items-center gap-2">
-          <span className="text-green-600 dark:text-green-400">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M10 2v6H4v8h6v6h4v-6h6v-8h-6V2h-4z" />
-            </svg>
-          </span>
+          <img src="/favicon.svg" alt="Farmaturno" width="24" height="24" />
           <span className="font-semibold text-gray-900 dark:text-white tracking-tight">
             Farmaturno
           </span>
