@@ -53,6 +53,16 @@ La mayor parte de la página es estática. La interactividad queda delimitada a 
 
 Este island recibe los datos completos como prop desde Astro y opera de forma autónoma a partir de ahí.
 
+### Obtención del teléfono y coordenadas
+
+El endpoint **no provee teléfono** en los datos actuales (solo en entradas históricas, que nunca se muestran). Por lo tanto:
+
+- **Google Places API** es la única fuente de verdad para teléfono y coordenadas (`lat`/`lng`).
+- La consulta a Places se realiza **por farmacia, la primera vez que aparece** en la UI.
+- El resultado se cachea en **`localStorage`** del navegador, sin expiración (el teléfono de una farmacia no cambia).
+- Clave del caché: nombre de la farmacia (`PlacesCache = Record<string, PlacesData>`).
+- Si Places no encuentra la farmacia, `phone` queda `null`.
+
 ---
 
 ## Diseño UI
