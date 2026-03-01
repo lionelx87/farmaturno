@@ -1,9 +1,12 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import PharmacyMap from '../components/PharmacyMap';
+import { MOCK_PHARMACIES } from '../lib/mocks';
+
+// TODO: replace with fetchPharmacies() once Google API key is configured
+const pharmacies = MOCK_PHARMACIES;
 ---
 
 <Layout>
-  <main>
-    <!-- PharmacyMap island will go here -->
-  </main>
+  <PharmacyMap pharmacies={pharmacies} client:load />
 </Layout>
