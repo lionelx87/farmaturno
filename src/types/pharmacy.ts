@@ -16,6 +16,7 @@ export interface Pharmacy {
 }
 
 // Data fetched from Google Places API and cached in localStorage
+// Fields: formatted_phone_number, geometry.location (LatLng → .lat() / .lng())
 export interface PlacesData {
   phone: string | null;
   lat: number;
@@ -24,3 +25,10 @@ export interface PlacesData {
 
 // localStorage cache keyed by pharmacy name
 export type PlacesCache = Record<string, PlacesData>;
+
+// Pharmacy enriched with Places data — ready for use in the UI island
+export interface PharmacyEnriched extends Pharmacy {
+  phone: string | null;
+  lat: number;
+  lng: number;
+}
