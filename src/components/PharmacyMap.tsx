@@ -5,6 +5,7 @@ import { MOCK_PLACES_CACHE } from '../lib/mocks';
 import type { Pharmacy, PharmacyEnriched, PlacesCache } from '../types/pharmacy';
 
 const API_KEY = import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
+const MAP_ID = import.meta.env.PUBLIC_GOOGLE_MAP_ID ?? '';
 const BARILOCHE_CENTER = { lat: -41.1335, lng: -71.3103 };
 
 function localToday(): string {
@@ -60,7 +61,7 @@ export default function PharmacyMap({ pharmacies }: Props) {
             <Map
               defaultCenter={BARILOCHE_CENTER}
               defaultZoom={13}
-              mapId="farmaturno-map"
+              mapId={MAP_ID}
               style={{ width: '100%', height: '100%' }}
             >
               {pharmaciesForDate.map(p =>
