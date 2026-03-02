@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
 import Sidebar from './Sidebar';
 import { MOCK_PLACES_CACHE } from '../lib/mocks';
@@ -29,6 +29,18 @@ interface Props {
 export default function PharmacyMap({ pharmacies }: Props) {
   const [selectedDate, setSelectedDate] = useState(localToday());
   const [selectedPharmacy, setSelectedPharmacy] = useState<PharmacyEnriched | null>(null);
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    setIsDark(document.documentElement.classList.contains('dark'));
+  }, []);
+
+  function toggleTheme() {
+    const next = !isDark;
+    setIsDark(next);
+    document.documentElement.classList.toggle('dark', next);
+    localStorage.setItem('theme', next ? 'dark' : 'light');
+  }
 
   // TODO: replace with real localStorage Places cache
   const placesCache = MOCK_PLACES_CACHE;
@@ -51,17 +63,21 @@ export default function PharmacyMap({ pharmacies }: Props) {
           selectedDate={selectedDate}
           selectedPharmacy={selectedPharmacy}
           availableDates={availableDates}
+          isDark={isDark}
           onDateChange={handleDateChange}
           onPharmacySelect={setSelectedPharmacy}
+          onToggleTheme={toggleTheme}
         />
 
-        {/* Map area — hidden on mobile (bottom sheet pattern handles mobile) */}
-        <div className="flex-1 relative hidden md:block">
+        {/* Map area — full screen on mobile (bottom sheet overlays on top) */}
+        <div className="flex-1 relative">
           {API_KEY ? (
             <Map
               defaultCenter={BARILOCHE_CENTER}
               defaultZoom={13}
               mapId={MAP_ID}
+              colorScheme={isDark ? 'DARK' : 'LIGHT'}
+              reuseMaps
               style={{ width: '100%', height: '100%' }}
             >
               {pharmaciesForDate.map(p =>

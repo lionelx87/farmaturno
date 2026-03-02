@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { PharmacyEnriched } from '../types/pharmacy';
 
 interface Props {
@@ -6,8 +6,10 @@ interface Props {
   selectedDate: string;
   selectedPharmacy: PharmacyEnriched | null;
   availableDates: string[];
+  isDark: boolean;
   onDateChange: (date: string) => void;
   onPharmacySelect: (pharmacy: PharmacyEnriched) => void;
+  onToggleTheme: () => void;
 }
 
 function formatDate(dateStr: string): string {
@@ -25,22 +27,12 @@ export default function Sidebar({
   selectedDate,
   selectedPharmacy,
   availableDates,
+  isDark,
   onDateChange,
   onPharmacySelect,
+  onToggleTheme,
 }: Props) {
-  const [isDark, setIsDark] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-
-  useEffect(() => {
-    setIsDark(document.documentElement.classList.contains('dark'));
-  }, []);
-
-  function toggleTheme() {
-    const next = !isDark;
-    setIsDark(next);
-    document.documentElement.classList.toggle('dark', next);
-    localStorage.setItem('theme', next ? 'dark' : 'light');
-  }
 
   const currentIndex = availableDates.indexOf(selectedDate);
 
@@ -62,7 +54,7 @@ export default function Sidebar({
           isDark={isDark}
           onPrev={() => navigateDate(-1)}
           onNext={() => navigateDate(1)}
-          onToggleTheme={toggleTheme}
+          onToggleTheme={onToggleTheme}
           onPharmacySelect={onPharmacySelect}
         />
       </aside>
@@ -92,14 +84,12 @@ export default function Sidebar({
             isDark={isDark}
             onPrev={() => navigateDate(-1)}
             onNext={() => navigateDate(1)}
-            onToggleTheme={toggleTheme}
+            onToggleTheme={onToggleTheme}
             onPharmacySelect={onPharmacySelect}
           />
         </div>
       </div>
 
-      {/* Mobile: map fills full screen behind the bottom sheet */}
-      <div className="md:hidden flex-1 relative" />
     </>
   );
 }
