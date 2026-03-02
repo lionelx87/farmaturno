@@ -97,6 +97,23 @@ El mapa permanece visible e interactuable detrás del bottom sheet en todo momen
 
 Soporte dark/light con toggle en el header del sidebar. Dark mode implementado con clase `dark` en `<html>` y `@custom-variant dark` de Tailwind 4.
 
+El estado `isDark` vive en `PharmacyMap` (ancestro común de `Sidebar` y `Map`) y se pasa como prop a ambos. El mapa usa `colorScheme='DARK'|'LIGHT'` de `@vis.gl/react-google-maps` para sincronizar su apariencia con el tema. Se usa `reuseMaps` para evitar recrear la instancia del mapa al cambiar `colorScheme`.
+
+### Variables de entorno requeridas
+
+- `PHARMACIES_ENDPOINT` — URL del endpoint externo (server-side)
+- `PUBLIC_GOOGLE_MAPS_API_KEY` — API key de Google Maps Platform (Maps JS API + Places API + Directions API)
+- `PUBLIC_GOOGLE_MAP_ID` — Map ID creado en Google Maps Platform → Map styles
+
+---
+
+## Pendiente de implementar
+
+- **Google Places API** — integración real para obtener teléfono y coordenadas (actualmente usa `MOCK_PLACES_CACHE`)
+- **Datos reales del endpoint** — reemplazar `MOCK_PHARMACIES` por `fetchPharmacies()` en `index.astro`
+- **Google Directions API** — ruta desde farmacia seleccionada hasta la ubicación del usuario
+- **Calendario** — date picker al hacer click en la fecha del selector
+
 ---
 
 ## Flujo resumido
