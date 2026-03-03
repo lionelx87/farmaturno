@@ -15,8 +15,8 @@ export interface Pharmacy {
   url: string | null;  // full absolute URL or null
 }
 
-// Data fetched from Google Places API and cached in localStorage
-// Fields: formatted_phone_number, geometry.location (LatLng → .lat() / .lng())
+// Data fetched from Google Places API (v1) and cached in localStorage
+// Fields: nationalPhoneNumber, location.latitude, location.longitude
 export interface PlacesData {
   phone: string | null;
   lat: number;

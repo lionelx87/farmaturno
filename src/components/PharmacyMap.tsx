@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
 import Sidebar from './Sidebar';
-import { MOCK_PLACES_CACHE } from '../lib/mocks';
+import { enrichWithPlaces } from '../lib/places';
 import type { Pharmacy, PharmacyEnriched, PlacesCache } from '../types/pharmacy';
 
 const API_KEY = import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
@@ -13,7 +13,7 @@ function localToday(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-function enrichPharmacies(pharmacies: Pharmacy[], cache: PlacesCache): PharmacyEnriched[] {
+function applyCache(pharmacies: Pharmacy[], cache: PlacesCache): PharmacyEnriched[] {
   return pharmacies.map(p => ({
     ...p,
     phone: cache[p.name]?.phone ?? null,
@@ -30,10 +30,23 @@ export default function PharmacyMap({ pharmacies }: Props) {
   const [selectedDate, setSelectedDate] = useState(localToday());
   const [selectedPharmacy, setSelectedPharmacy] = useState<PharmacyEnriched | null>(null);
   const [isDark, setIsDark] = useState(false);
+  const [placesCache, setPlacesCache] = useState<PlacesCache>({});
 
   useEffect(() => {
     setIsDark(document.documentElement.classList.contains('dark'));
   }, []);
+
+  const pharmaciesForDay = pharmacies.filter(p => p.date === selectedDate);
+
+  // Fetch Places data for the pharmacies of the selected date
+  useEffect(() => {
+    if (!API_KEY || pharmaciesForDay.length === 0) return;
+    const names = pharmaciesForDay.map(p => p.name);
+    enrichWithPlaces(names, API_KEY).then(setPlacesCache);
+  }, [selectedDate]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const pharmaciesForDate = applyCache(pharmaciesForDay, placesCache);
+  const availableDates = [...new Set(pharmacies.map(p => p.date))].sort();
 
   function toggleTheme() {
     const next = !isDark;
@@ -41,13 +54,6 @@ export default function PharmacyMap({ pharmacies }: Props) {
     document.documentElement.classList.toggle('dark', next);
     localStorage.setItem('theme', next ? 'dark' : 'light');
   }
-
-  // TODO: replace with real localStorage Places cache
-  const placesCache = MOCK_PLACES_CACHE;
-
-  const allEnriched = enrichPharmacies(pharmacies, placesCache);
-  const pharmaciesForDate = allEnriched.filter(p => p.date === selectedDate);
-  const availableDates = [...new Set(pharmacies.map(p => p.date))].sort();
 
   function handleDateChange(date: string) {
     setSelectedDate(date);
