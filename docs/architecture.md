@@ -59,6 +59,8 @@ El endpoint **no provee teléfono** en los datos actuales (solo en entradas hist
 
 - **Google Places API** es la única fuente de verdad para teléfono y coordenadas (`lat`/`lng`).
 - La consulta a Places se realiza **por farmacia, la primera vez que aparece** en la UI.
+- El `textQuery` incluye nombre **y dirección** de la farmacia para mayor precisión: `"${name} ${address} Bariloche"`.
+- Las direcciones del endpoint se normalizan antes de usarlas: se inserta espacio entre letra y dígito pegados (ej. `"Hermann3995"` → `"Hermann 3995"`).
 - El resultado se cachea en **`localStorage`** del navegador, sin expiración (el teléfono de una farmacia no cambia).
 - Clave del caché: nombre de la farmacia (`PlacesCache = Record<string, PlacesData>`).
 - Si Places no encuentra la farmacia, `phone` queda `null`.
@@ -76,7 +78,7 @@ Pantalla dividida en dos secciones:
 ### Sidebar — contenido (de arriba hacia abajo)
 
 1. **Header**: ícono + nombre de la app, toggle dark/light
-2. **Selector de fecha**: `‹ Lunes 2 de marzo ›` — flechas para avanzar/retroceder un día. Click en la fecha abre un calendario. Rango limitado a los datos disponibles del endpoint.
+2. **Selector de fecha**: `‹ Lunes 2 de marzo ›` — flechas para avanzar/retroceder un día. Rango: 7 días atrás hasta 2 días adelante. No se implementa calendario (el rango es de ~10 días, las flechas son suficientes).
 3. **Lista de farmacias**: 3 items con nombre, dirección e ícono de teléfono para llamada directa
 4. **Card de detalle**: debajo de la lista, muestra la farmacia seleccionada con nombre, dirección y teléfono
 
@@ -84,6 +86,7 @@ Pantalla dividida en dos secciones:
 
 - Pins de ubicación por cada farmacia de turno
 - Al seleccionar una farmacia, traza la ruta desde ese pin hasta la ubicación actual del usuario
+- La geolocalización usa `enableHighAccuracy: true` para preferir GPS sobre posicionamiento por red
 
 ### Diseño responsive (mobile)
 
@@ -106,13 +109,6 @@ El estado `isDark` vive en `PharmacyMap` (ancestro común de `Sidebar` y `Map`) 
 - `PUBLIC_GOOGLE_MAP_ID` — Map ID creado en Google Maps Platform → Map styles
 
 ---
-
-## Pendiente de implementar
-
-- **Google Places API** — integración real para obtener teléfono y coordenadas (actualmente usa `MOCK_PLACES_CACHE`)
-- **Datos reales del endpoint** — reemplazar `MOCK_PHARMACIES` por `fetchPharmacies()` en `index.astro`
-- **Google Directions API** — ruta desde farmacia seleccionada hasta la ubicación del usuario
-- **Calendario** — date picker al hacer click en la fecha del selector
 
 ---
 
