@@ -46,7 +46,19 @@ export default function PharmacyMap({ pharmacies }: Props) {
   }, [selectedDate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const pharmaciesForDate = applyCache(pharmaciesForDay, placesCache);
-  const availableDates = [...new Set(pharmacies.map(p => p.date))].sort();
+
+  // Limit navigation to 7 days back and 2 days ahead from today
+  const today = localToday();
+  const d7back = new Date(today + 'T12:00:00');
+  d7back.setDate(d7back.getDate() - 7);
+  const d2ahead = new Date(today + 'T12:00:00');
+  d2ahead.setDate(d2ahead.getDate() + 2);
+  const minDate = d7back.toISOString().slice(0, 10);
+  const maxDate = d2ahead.toISOString().slice(0, 10);
+
+  const availableDates = [...new Set(pharmacies.map(p => p.date))]
+    .filter(d => d >= minDate && d <= maxDate)
+    .sort();
 
   function toggleTheme() {
     const next = !isDark;
