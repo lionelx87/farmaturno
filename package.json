@@ -20,5 +20,8 @@
     "react-dom": "^19.2.4",
     "tailwindcss": "^4.2.1",
     "typescript": "^5.9.3"
+  },
+  "devDependencies": {
+    "@types/google.maps": "^3.58.1"
   }
 }

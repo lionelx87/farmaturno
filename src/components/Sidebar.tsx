@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { PharmacyEnriched } from '../types/pharmacy';
+import type { LocationStatus } from './PharmacyMap';
 
 interface Props {
   pharmacies: PharmacyEnriched[];
@@ -7,9 +8,11 @@ interface Props {
   selectedPharmacy: PharmacyEnriched | null;
   availableDates: string[];
   isDark: boolean;
+  locationStatus: LocationStatus;
   onDateChange: (date: string) => void;
   onPharmacySelect: (pharmacy: PharmacyEnriched) => void;
   onToggleTheme: () => void;
+  onGetDirections: () => void;
 }
 
 function formatDate(dateStr: string): string {
@@ -28,9 +31,11 @@ export default function Sidebar({
   selectedPharmacy,
   availableDates,
   isDark,
+  locationStatus,
   onDateChange,
   onPharmacySelect,
   onToggleTheme,
+  onGetDirections,
 }: Props) {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -52,10 +57,12 @@ export default function Sidebar({
           canGoPrev={currentIndex > 0}
           canGoNext={currentIndex < availableDates.length - 1}
           isDark={isDark}
+          locationStatus={locationStatus}
           onPrev={() => navigateDate(-1)}
           onNext={() => navigateDate(1)}
           onToggleTheme={onToggleTheme}
           onPharmacySelect={onPharmacySelect}
+          onGetDirections={onGetDirections}
         />
       </aside>
 
@@ -82,10 +89,12 @@ export default function Sidebar({
             canGoPrev={currentIndex > 0}
             canGoNext={currentIndex < availableDates.length - 1}
             isDark={isDark}
+            locationStatus={locationStatus}
             onPrev={() => navigateDate(-1)}
             onNext={() => navigateDate(1)}
             onToggleTheme={onToggleTheme}
             onPharmacySelect={onPharmacySelect}
+            onGetDirections={onGetDirections}
           />
         </div>
       </div>
@@ -103,10 +112,12 @@ interface ContentProps {
   canGoPrev: boolean;
   canGoNext: boolean;
   isDark: boolean;
+  locationStatus: LocationStatus;
   onPrev: () => void;
   onNext: () => void;
   onToggleTheme: () => void;
   onPharmacySelect: (pharmacy: PharmacyEnriched) => void;
+  onGetDirections: () => void;
 }
 
 function SidebarContent({
@@ -116,10 +127,12 @@ function SidebarContent({
   canGoPrev,
   canGoNext,
   isDark,
+  locationStatus,
   onPrev,
   onNext,
   onToggleTheme,
   onPharmacySelect,
+  onGetDirections,
 }: ContentProps) {
   return (
     <>
@@ -229,6 +242,32 @@ function SidebarContent({
             >
               {selectedPharmacy.phone}
             </a>
+          )}
+
+          {/* Directions button — only shown when pharmacy has coordinates */}
+          {selectedPharmacy.lat !== 0 && (
+            <div className="mt-3">
+              <button
+                onClick={onGetDirections}
+                disabled={locationStatus === 'loading'}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-green-600 hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium transition-colors"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M21.71 11.29l-9-9a1 1 0 0 0-1.42 0l-9 9a1 1 0 0 0 0 1.42l9 9a1 1 0 0 0 1.42 0l9-9a1 1 0 0 0 0-1.42zM14 14.5V12h-4v3H8v-4a1 1 0 0 1 1-1h5V7.5l3.5 3.5-3.5 3.5z" />
+                </svg>
+                {locationStatus === 'loading' ? 'Obteniendo ubicación...' : 'Cómo llegar'}
+              </button>
+              {locationStatus === 'denied' && (
+                <p className="text-xs text-red-500 dark:text-red-400 mt-2">
+                  Habilitá la ubicación en la barra del navegador y recargá la página.
+                </p>
+              )}
+              {locationStatus === 'unavailable' && (
+                <p className="text-xs text-amber-500 dark:text-amber-400 mt-2">
+                  Tu navegador no soporta geolocalización.
+                </p>
+              )}
+            </div>
           )}
         </div>
       )}

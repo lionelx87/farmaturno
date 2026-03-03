@@ -41,6 +41,10 @@ importers:
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
+    devDependencies:
+      '@types/google.maps':
+        specifier: ^3.58.1
+        version: 3.58.1
 
 packages:
 
