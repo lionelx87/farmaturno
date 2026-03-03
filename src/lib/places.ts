@@ -23,6 +23,7 @@ function saveCache(cache: PlacesCache): void {
 
 async function fetchPlaceData(
   name: string,
+  address: string,
   apiKey: string
 ): Promise<PlacesData | null> {
   try {
@@ -34,7 +35,7 @@ async function fetchPlaceData(
         'X-Goog-FieldMask': 'places.nationalPhoneNumber,places.location',
       },
       body: JSON.stringify({
-        textQuery: `${name} Bariloche`,
+        textQuery: `${name} ${address} Bariloche`,
         locationBias: {
           circle: {
             center: BARILOCHE_CENTER,
@@ -61,20 +62,20 @@ async function fetchPlaceData(
 }
 
 export async function enrichWithPlaces(
-  pharmacyNames: string[],
+  pharmacies: { name: string; address: string }[],
   apiKey: string
 ): Promise<PlacesCache> {
   const cache = loadCache();
-  const missing = pharmacyNames.filter(name => !cache[name]);
+  const missing = pharmacies.filter(p => !cache[p.name]);
 
   if (missing.length === 0) return cache;
 
   const results = await Promise.all(
-    missing.map(name => fetchPlaceData(name, apiKey))
+    missing.map(p => fetchPlaceData(p.name, p.address, apiKey))
   );
 
-  missing.forEach((name, i) => {
-    if (results[i]) cache[name] = results[i]!;
+  missing.forEach((p, i) => {
+    if (results[i]) cache[p.name] = results[i]!;
   });
 
   saveCache(cache);

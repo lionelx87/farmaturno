@@ -35,7 +35,7 @@ function parseRaw(raw: PharmacyRaw): Pharmacy {
   return {
     date: raw.date.slice(0, 10),
     name: parseTitle(raw.title),
-    address: raw.description.trim(),
+    address: raw.description.trim().replace(/([a-zA-ZáéíóúüÁÉÍÓÚÜñÑ])(\d)/g, '$1 $2'),
     url: normalizeUrl(raw.url),
   };
 }
