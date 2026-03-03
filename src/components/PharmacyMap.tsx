@@ -130,7 +130,8 @@ export default function PharmacyMap({ pharmacies }: Props) {
       },
       err => {
         setLocationStatus(err.code === 1 ? 'denied' : 'unavailable');
-      }
+      },
+      { enableHighAccuracy: true }
     );
   }
 
