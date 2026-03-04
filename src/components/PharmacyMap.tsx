@@ -164,6 +164,7 @@ export default function PharmacyMap({ pharmacies }: Props) {
               defaultZoom={13}
               mapId={MAP_ID}
               colorScheme={isDark ? 'DARK' : 'LIGHT'}
+              gestureHandling="greedy"
               reuseMaps
               style={{ width: '100%', height: '100%' }}
             >
