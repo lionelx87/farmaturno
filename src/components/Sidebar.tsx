@@ -27,7 +27,7 @@ function PharmacyDetailCard({ pharmacy, locationStatus, onGetDirections }: {
       <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{pharmacy.address}</p>
       {pharmacy.phone && (
         <a
-          href={`tel:${pharmacy.phone}`}
+          href={`tel:${pharmacy.phone.replace(/\D/g, '')}`}
           className="inline-flex items-center gap-1.5 text-sm font-medium text-green-600 dark:text-green-400 hover:underline"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
@@ -300,7 +300,7 @@ function SidebarContent({
               </div>
               {p.phone && (
                 <a
-                  href={`tel:${p.phone}`}
+                  href={`tel:${p.phone!.replace(/\D/g, '')}`}
                   onClick={e => e.stopPropagation()}
                   className="flex-shrink-0 p-2 rounded-lg text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900 transition-colors"
                   aria-label={`Llamar a ${p.name}`}
