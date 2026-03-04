@@ -117,7 +117,7 @@ export default function Sidebar({
       <div className="md:hidden fixed inset-0 pointer-events-none z-20">
         {selectedPharmacy ? (
           /* Card mode: compact sheet, mapa visible ~62vh */
-          <div className="absolute bottom-0 left-0 right-0 pointer-events-auto flex flex-col rounded-t-2xl border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 h-[38vh] transition-all duration-300">
+          <div className="absolute bottom-0 left-0 right-0 pointer-events-auto flex flex-col rounded-t-2xl border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 h-auto max-h-[55vh] overflow-y-auto">
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800">
               <button
                 onClick={onPharmacyDeselect}
