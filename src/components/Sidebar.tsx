@@ -11,8 +11,54 @@ interface Props {
   locationStatus: LocationStatus;
   onDateChange: (date: string) => void;
   onPharmacySelect: (pharmacy: PharmacyEnriched) => void;
+  onPharmacyDeselect: () => void;
   onToggleTheme: () => void;
   onGetDirections: () => void;
+}
+
+function PharmacyDetailCard({ pharmacy, locationStatus, onGetDirections }: {
+  pharmacy: PharmacyEnriched;
+  locationStatus: LocationStatus;
+  onGetDirections: () => void;
+}) {
+  return (
+    <>
+      <h2 className="font-semibold text-gray-900 dark:text-white mb-1">{pharmacy.name}</h2>
+      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{pharmacy.address}</p>
+      {pharmacy.phone && (
+        <a
+          href={`tel:${pharmacy.phone}`}
+          className="text-sm font-medium text-green-600 dark:text-green-400 hover:underline"
+        >
+          {pharmacy.phone}
+        </a>
+      )}
+      {pharmacy.lat !== 0 && (
+        <div className="mt-3">
+          <button
+            onClick={onGetDirections}
+            disabled={locationStatus === 'loading'}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-green-600 hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium transition-colors"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M21.71 11.29l-9-9a1 1 0 0 0-1.42 0l-9 9a1 1 0 0 0 0 1.42l9 9a1 1 0 0 0 1.42 0l9-9a1 1 0 0 0 0-1.42zM14 14.5V12h-4v3H8v-4a1 1 0 0 1 1-1h5V7.5l3.5 3.5-3.5 3.5z" />
+            </svg>
+            {locationStatus === 'loading' ? 'Obteniendo ubicación...' : 'Cómo llegar'}
+          </button>
+          {locationStatus === 'denied' && (
+            <p className="text-xs text-red-500 dark:text-red-400 mt-2">
+              Habilitá la ubicación en la barra del navegador y recargá la página.
+            </p>
+          )}
+          {locationStatus === 'unavailable' && (
+            <p className="text-xs text-amber-500 dark:text-amber-400 mt-2">
+              Tu navegador no soporta geolocalización.
+            </p>
+          )}
+        </div>
+      )}
+    </>
+  );
 }
 
 function formatDate(dateStr: string): string {
@@ -34,6 +80,7 @@ export default function Sidebar({
   locationStatus,
   onDateChange,
   onPharmacySelect,
+  onPharmacyDeselect,
   onToggleTheme,
   onGetDirections,
 }: Props) {
@@ -68,35 +115,74 @@ export default function Sidebar({
 
       {/* ── MOBILE bottom sheet ── */}
       <div className="md:hidden fixed inset-0 pointer-events-none z-20">
-        <div
-          className={`absolute bottom-0 left-0 right-0 pointer-events-auto flex flex-col rounded-t-2xl border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 transition-all duration-300 ${
-            isExpanded ? 'h-[70vh]' : 'h-[42vh]'
-          }`}
-        >
-          {/* Drag handle */}
-          <button
-            className="flex justify-center pt-3 pb-1"
-            onClick={() => setIsExpanded(e => !e)}
-            aria-label={isExpanded ? 'Contraer' : 'Expandir'}
+        {selectedPharmacy ? (
+          /* Card mode: compact sheet, mapa visible ~62vh */
+          <div className="absolute bottom-0 left-0 right-0 pointer-events-auto flex flex-col rounded-t-2xl border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 h-[38vh] transition-all duration-300">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800">
+              <button
+                onClick={onPharmacyDeselect}
+                className="flex items-center gap-1.5 text-sm font-medium text-green-600 dark:text-green-400"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
+                </svg>
+                Lista
+              </button>
+              <button
+                onClick={onToggleTheme}
+                className="p-2 rounded-lg text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                aria-label="Alternar tema"
+              >
+                {isDark ? (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z" />
+                  </svg>
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 7a5 5 0 1 0 0 10A5 5 0 0 0 12 7zm0-5a1 1 0 0 1 1 1v2a1 1 0 1 1-2 0V3a1 1 0 0 1 1-1zm0 16a1 1 0 0 1 1 1v2a1 1 0 1 1-2 0v-2a1 1 0 0 1 1-1zM4.22 4.22a1 1 0 0 1 1.42 0l1.41 1.41a1 1 0 0 1-1.41 1.42L4.22 5.64a1 1 0 0 1 0-1.42zm13.14 13.14a1 1 0 0 1 1.42 0l1.41 1.41a1 1 0 0 1-1.41 1.42l-1.41-1.41a1 1 0 0 1 0-1.42zM3 12a1 1 0 0 1 1-1h2a1 1 0 1 1 0 2H4a1 1 0 0 1-1-1zm16 0a1 1 0 0 1 1-1h2a1 1 0 1 1 0 2h-2a1 1 0 0 1-1-1zM4.22 19.78a1 1 0 0 1 0-1.42l1.41-1.41a1 1 0 0 1 1.42 1.41l-1.41 1.41a1 1 0 0 1-1.42 0zM17.36 6.64a1 1 0 0 1 0-1.42l1.41-1.41a1 1 0 0 1 1.42 1.42l-1.41 1.41a1 1 0 0 1-1.42 0z" />
+                  </svg>
+                )}
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4">
+              <PharmacyDetailCard
+                pharmacy={selectedPharmacy}
+                locationStatus={locationStatus}
+                onGetDirections={onGetDirections}
+              />
+            </div>
+          </div>
+        ) : (
+          /* List mode: expandible */
+          <div
+            className={`absolute bottom-0 left-0 right-0 pointer-events-auto flex flex-col rounded-t-2xl border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 transition-all duration-300 ${
+              isExpanded ? 'h-[70vh]' : 'h-[42vh]'
+            }`}
           >
-            <span className="w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-700" />
-          </button>
+            <button
+              className="flex justify-center pt-3 pb-1"
+              onClick={() => setIsExpanded(e => !e)}
+              aria-label={isExpanded ? 'Contraer' : 'Expandir'}
+            >
+              <span className="w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-700" />
+            </button>
 
-          <SidebarContent
-            pharmacies={pharmacies}
-            selectedDate={selectedDate}
-            selectedPharmacy={selectedPharmacy}
-            canGoPrev={currentIndex > 0}
-            canGoNext={currentIndex < availableDates.length - 1}
-            isDark={isDark}
-            locationStatus={locationStatus}
-            onPrev={() => navigateDate(-1)}
-            onNext={() => navigateDate(1)}
-            onToggleTheme={onToggleTheme}
-            onPharmacySelect={onPharmacySelect}
-            onGetDirections={onGetDirections}
-          />
-        </div>
+            <SidebarContent
+              pharmacies={pharmacies}
+              selectedDate={selectedDate}
+              selectedPharmacy={selectedPharmacy}
+              canGoPrev={currentIndex > 0}
+              canGoNext={currentIndex < availableDates.length - 1}
+              isDark={isDark}
+              locationStatus={locationStatus}
+              onPrev={() => navigateDate(-1)}
+              onNext={() => navigateDate(1)}
+              onToggleTheme={onToggleTheme}
+              onPharmacySelect={onPharmacySelect}
+              onGetDirections={onGetDirections}
+            />
+          </div>
+        )}
       </div>
 
     </>
@@ -229,46 +315,11 @@ function SidebarContent({
       {/* Detail card */}
       {selectedPharmacy && (
         <div className="border-t border-gray-200 dark:border-gray-800 p-4 bg-gray-50 dark:bg-gray-900">
-          <h2 className="font-semibold text-gray-900 dark:text-white mb-1">
-            {selectedPharmacy.name}
-          </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-            {selectedPharmacy.address}
-          </p>
-          {selectedPharmacy.phone && (
-            <a
-              href={`tel:${selectedPharmacy.phone}`}
-              className="text-sm font-medium text-green-600 dark:text-green-400 hover:underline"
-            >
-              {selectedPharmacy.phone}
-            </a>
-          )}
-
-          {/* Directions button — only shown when pharmacy has coordinates */}
-          {selectedPharmacy.lat !== 0 && (
-            <div className="mt-3">
-              <button
-                onClick={onGetDirections}
-                disabled={locationStatus === 'loading'}
-                className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-green-600 hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium transition-colors"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M21.71 11.29l-9-9a1 1 0 0 0-1.42 0l-9 9a1 1 0 0 0 0 1.42l9 9a1 1 0 0 0 1.42 0l9-9a1 1 0 0 0 0-1.42zM14 14.5V12h-4v3H8v-4a1 1 0 0 1 1-1h5V7.5l3.5 3.5-3.5 3.5z" />
-                </svg>
-                {locationStatus === 'loading' ? 'Obteniendo ubicación...' : 'Cómo llegar'}
-              </button>
-              {locationStatus === 'denied' && (
-                <p className="text-xs text-red-500 dark:text-red-400 mt-2">
-                  Habilitá la ubicación en la barra del navegador y recargá la página.
-                </p>
-              )}
-              {locationStatus === 'unavailable' && (
-                <p className="text-xs text-amber-500 dark:text-amber-400 mt-2">
-                  Tu navegador no soporta geolocalización.
-                </p>
-              )}
-            </div>
-          )}
+          <PharmacyDetailCard
+            pharmacy={selectedPharmacy}
+            locationStatus={locationStatus}
+            onGetDirections={onGetDirections}
+          />
         </div>
       )}
     </>

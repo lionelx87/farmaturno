@@ -65,6 +65,16 @@ function DirectionsLayer({ origin, destination }: DirectionsLayerProps) {
   return null;
 }
 
+function MapCenterer({ pharmacy }: { pharmacy: PharmacyEnriched | null }) {
+  const map = useMap();
+  useEffect(() => {
+    if (map && pharmacy && pharmacy.lat !== 0) {
+      map.panTo({ lat: pharmacy.lat, lng: pharmacy.lng });
+    }
+  }, [map, pharmacy]);
+  return null;
+}
+
 // ── PharmacyMap ──────────────────────────────────────────────────────────────
 
 interface Props {
@@ -153,6 +163,7 @@ export default function PharmacyMap({ pharmacies }: Props) {
           locationStatus={locationStatus}
           onDateChange={handleDateChange}
           onPharmacySelect={setSelectedPharmacy}
+          onPharmacyDeselect={() => setSelectedPharmacy(null)}
           onToggleTheme={toggleTheme}
           onGetDirections={handleGetDirections}
         />
@@ -177,6 +188,7 @@ export default function PharmacyMap({ pharmacies }: Props) {
                   />
                 )
               )}
+              <MapCenterer pharmacy={selectedPharmacy} />
               {showDirections && (
                 <DirectionsLayer
                   origin={userLocation!}
