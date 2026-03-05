@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { APIProvider, Map, AdvancedMarker, useMapsLibrary, useMap } from '@vis.gl/react-google-maps';
 import Sidebar from './Sidebar';
 import { enrichWithPlaces } from '../lib/places';
+import { getDistance } from '../lib/distance';
 import type { Pharmacy, PharmacyEnriched, PlacesCache } from '../types/pharmacy';
+import type { DistanceResult } from '../lib/distance';
 
 const API_KEY = import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
 const MAP_ID = import.meta.env.PUBLIC_GOOGLE_MAP_ID ?? '';
@@ -107,6 +109,7 @@ export default function PharmacyMap({ pharmacies }: Props) {
   const [placesCache, setPlacesCache] = useState<PlacesCache>({});
   const [userLocation, setUserLocation] = useState<google.maps.LatLngLiteral | null>(null);
   const [locationStatus, setLocationStatus] = useState<LocationStatus>('idle');
+  const [distances, setDistances] = useState<Record<string, DistanceResult>>({});
 
   useEffect(() => {
     setIsDark(document.documentElement.classList.contains('dark'));
@@ -120,6 +123,16 @@ export default function PharmacyMap({ pharmacies }: Props) {
   }, [selectedDate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const pharmaciesForDate = applyCache(pharmaciesForDay, placesCache);
+
+  useEffect(() => {
+    if (!userLocation) return;
+    const located = pharmaciesForDate.filter(p => p.lat !== 0);
+    Promise.all(
+      located.map(p =>
+        getDistance(userLocation, { lat: p.lat, lng: p.lng }).then(r => [p.name, r] as const)
+      )
+    ).then(entries => setDistances(Object.fromEntries(entries)));
+  }, [userLocation, selectedDate, placesCache]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function toggleTheme() {
     const next = !isDark;
@@ -167,6 +180,7 @@ export default function PharmacyMap({ pharmacies }: Props) {
           availableDates={availableDates}
           isDark={isDark}
           locationStatus={locationStatus}
+          distances={distances}
           onDateChange={handleDateChange}
           onPharmacySelect={setSelectedPharmacy}
           onPharmacyDeselect={() => setSelectedPharmacy(null)}

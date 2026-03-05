@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { PharmacyEnriched } from '../types/pharmacy';
 import type { LocationStatus } from './PharmacyMap';
+import type { DistanceResult } from '../lib/distance';
 
 interface Props {
   pharmacies: PharmacyEnriched[];
@@ -9,6 +10,7 @@ interface Props {
   availableDates: string[];
   isDark: boolean;
   locationStatus: LocationStatus;
+  distances: Record<string, DistanceResult>;
   onDateChange: (date: string) => void;
   onPharmacySelect: (pharmacy: PharmacyEnriched) => void;
   onPharmacyDeselect: () => void;
@@ -16,15 +18,21 @@ interface Props {
   onGetDirections: () => void;
 }
 
-function PharmacyDetailCard({ pharmacy, locationStatus, onGetDirections }: {
+function PharmacyDetailCard({ pharmacy, locationStatus, distance, onGetDirections }: {
   pharmacy: PharmacyEnriched;
   locationStatus: LocationStatus;
+  distance?: DistanceResult;
   onGetDirections: () => void;
 }) {
   return (
     <>
       <h2 className="font-semibold text-gray-900 dark:text-white mb-1">{pharmacy.name}</h2>
       <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{pharmacy.address}</p>
+      {distance && (
+        <p className="text-xs text-blue-600 dark:text-blue-400 mb-1">
+          ~{distance.label} en línea recta
+        </p>
+      )}
       {pharmacy.phone && (
         <a
           href={`tel:${pharmacy.phone.replace(/\D/g, '')}`}
@@ -81,6 +89,7 @@ export default function Sidebar({
   availableDates,
   isDark,
   locationStatus,
+  distances,
   onDateChange,
   onPharmacySelect,
   onPharmacyDeselect,
@@ -108,6 +117,7 @@ export default function Sidebar({
           canGoNext={currentIndex < availableDates.length - 1}
           isDark={isDark}
           locationStatus={locationStatus}
+          distances={distances}
           onPrev={() => navigateDate(-1)}
           onNext={() => navigateDate(1)}
           onToggleTheme={onToggleTheme}
@@ -151,6 +161,7 @@ export default function Sidebar({
               <PharmacyDetailCard
                 pharmacy={selectedPharmacy}
                 locationStatus={locationStatus}
+                distance={distances[selectedPharmacy.name]}
                 onGetDirections={onGetDirections}
               />
             </div>
@@ -178,6 +189,7 @@ export default function Sidebar({
               canGoNext={currentIndex < availableDates.length - 1}
               isDark={isDark}
               locationStatus={locationStatus}
+              distances={distances}
               onPrev={() => navigateDate(-1)}
               onNext={() => navigateDate(1)}
               onToggleTheme={onToggleTheme}
@@ -202,6 +214,7 @@ interface ContentProps {
   canGoNext: boolean;
   isDark: boolean;
   locationStatus: LocationStatus;
+  distances: Record<string, DistanceResult>;
   onPrev: () => void;
   onNext: () => void;
   onToggleTheme: () => void;
@@ -217,6 +230,7 @@ function SidebarContent({
   canGoNext,
   isDark,
   locationStatus,
+  distances,
   onPrev,
   onNext,
   onToggleTheme,
@@ -297,6 +311,11 @@ function SidebarContent({
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-gray-900 dark:text-white truncate">{p.name}</p>
                 <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{p.address}</p>
+                {distances[p.name] && (
+                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-0.5">
+                    ~{distances[p.name].label}
+                  </p>
+                )}
               </div>
               {p.phone && (
                 <a
@@ -321,6 +340,7 @@ function SidebarContent({
           <PharmacyDetailCard
             pharmacy={selectedPharmacy}
             locationStatus={locationStatus}
+            distance={distances[selectedPharmacy.name]}
             onGetDirections={onGetDirections}
           />
         </div>
