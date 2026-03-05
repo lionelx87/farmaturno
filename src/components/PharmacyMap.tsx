@@ -65,6 +65,15 @@ function DirectionsLayer({ origin, destination }: DirectionsLayerProps) {
   return null;
 }
 
+function UserLocationMarker() {
+  return (
+    <div className="relative flex items-center justify-center w-5 h-5">
+      <div className="absolute w-5 h-5 rounded-full bg-blue-400 opacity-75 animate-ping" />
+      <div className="w-3.5 h-3.5 rounded-full bg-blue-500 border-2 border-white shadow-md" />
+    </div>
+  );
+}
+
 function MapCenterer({ pharmacy }: { pharmacy: PharmacyEnriched | null }) {
   const map = useMap();
   useEffect(() => {
@@ -184,6 +193,11 @@ export default function PharmacyMap({ pharmacies }: Props) {
                     onClick={() => setSelectedPharmacy(p)}
                   />
                 )
+              )}
+              {userLocation && (
+                <AdvancedMarker position={userLocation}>
+                  <UserLocationMarker />
+                </AdvancedMarker>
               )}
               <MapCenterer pharmacy={selectedPharmacy} />
               {showDirections && (
