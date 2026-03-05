@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { PharmacyEnriched } from '../types/pharmacy';
-import type { LocationStatus } from './PharmacyMap';
+import type { LocationStatus, TravelMode } from './PharmacyMap';
 import type { DistanceResult } from '../lib/distance';
 
 interface Props {
@@ -11,18 +11,22 @@ interface Props {
   isDark: boolean;
   locationStatus: LocationStatus;
   distances: Record<string, DistanceResult>;
+  travelMode: TravelMode;
   onDateChange: (date: string) => void;
   onPharmacySelect: (pharmacy: PharmacyEnriched) => void;
   onPharmacyDeselect: () => void;
   onToggleTheme: () => void;
   onGetDirections: () => void;
+  onTravelModeChange: (mode: TravelMode) => void;
 }
 
-function PharmacyDetailCard({ pharmacy, locationStatus, distance, onGetDirections }: {
+function PharmacyDetailCard({ pharmacy, locationStatus, distance, travelMode, onGetDirections, onTravelModeChange }: {
   pharmacy: PharmacyEnriched;
   locationStatus: LocationStatus;
   distance?: DistanceResult;
+  travelMode: TravelMode;
   onGetDirections: () => void;
+  onTravelModeChange: (mode: TravelMode) => void;
 }) {
   return (
     <>
@@ -45,7 +49,40 @@ function PharmacyDetailCard({ pharmacy, locationStatus, distance, onGetDirection
         </a>
       )}
       {pharmacy.lat !== 0 && (
-        <div className="mt-3">
+        <div className="mt-3 flex flex-col gap-2">
+          {/* Travel mode toggle */}
+          <div className="flex rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 self-start">
+            <button
+              onClick={() => onTravelModeChange('WALKING')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
+                travelMode === 'WALKING'
+                  ? 'bg-green-600 text-white'
+                  : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+              }`}
+              aria-label="A pie"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2V9.6l1.8-.7" />
+              </svg>
+              A pie
+            </button>
+            <button
+              onClick={() => onTravelModeChange('DRIVING')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors border-l border-gray-200 dark:border-gray-700 ${
+                travelMode === 'DRIVING'
+                  ? 'bg-green-600 text-white'
+                  : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+              }`}
+              aria-label="En auto"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z" />
+              </svg>
+              En auto
+            </button>
+          </div>
+
+          {/* Directions button */}
           <button
             onClick={onGetDirections}
             disabled={locationStatus === 'loading'}
@@ -57,12 +94,12 @@ function PharmacyDetailCard({ pharmacy, locationStatus, distance, onGetDirection
             {locationStatus === 'loading' ? 'Obteniendo ubicación...' : 'Cómo llegar'}
           </button>
           {locationStatus === 'denied' && (
-            <p className="text-xs text-red-500 dark:text-red-400 mt-2">
+            <p className="text-xs text-red-500 dark:text-red-400">
               Habilitá la ubicación en la barra del navegador y recargá la página.
             </p>
           )}
           {locationStatus === 'unavailable' && (
-            <p className="text-xs text-amber-500 dark:text-amber-400 mt-2">
+            <p className="text-xs text-amber-500 dark:text-amber-400">
               Tu navegador no soporta geolocalización.
             </p>
           )}
@@ -90,11 +127,13 @@ export default function Sidebar({
   isDark,
   locationStatus,
   distances,
+  travelMode,
   onDateChange,
   onPharmacySelect,
   onPharmacyDeselect,
   onToggleTheme,
   onGetDirections,
+  onTravelModeChange,
 }: Props) {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -118,11 +157,13 @@ export default function Sidebar({
           isDark={isDark}
           locationStatus={locationStatus}
           distances={distances}
+          travelMode={travelMode}
           onPrev={() => navigateDate(-1)}
           onNext={() => navigateDate(1)}
           onToggleTheme={onToggleTheme}
           onPharmacySelect={onPharmacySelect}
           onGetDirections={onGetDirections}
+          onTravelModeChange={onTravelModeChange}
         />
       </aside>
 
@@ -162,7 +203,9 @@ export default function Sidebar({
                 pharmacy={selectedPharmacy}
                 locationStatus={locationStatus}
                 distance={distances[selectedPharmacy.name]}
+                travelMode={travelMode}
                 onGetDirections={onGetDirections}
+                onTravelModeChange={onTravelModeChange}
               />
             </div>
           </div>
@@ -190,11 +233,13 @@ export default function Sidebar({
               isDark={isDark}
               locationStatus={locationStatus}
               distances={distances}
+              travelMode={travelMode}
               onPrev={() => navigateDate(-1)}
               onNext={() => navigateDate(1)}
               onToggleTheme={onToggleTheme}
               onPharmacySelect={onPharmacySelect}
               onGetDirections={onGetDirections}
+              onTravelModeChange={onTravelModeChange}
             />
           </div>
         )}
@@ -215,11 +260,13 @@ interface ContentProps {
   isDark: boolean;
   locationStatus: LocationStatus;
   distances: Record<string, DistanceResult>;
+  travelMode: TravelMode;
   onPrev: () => void;
   onNext: () => void;
   onToggleTheme: () => void;
   onPharmacySelect: (pharmacy: PharmacyEnriched) => void;
   onGetDirections: () => void;
+  onTravelModeChange: (mode: TravelMode) => void;
 }
 
 function SidebarContent({
@@ -231,11 +278,13 @@ function SidebarContent({
   isDark,
   locationStatus,
   distances,
+  travelMode,
   onPrev,
   onNext,
   onToggleTheme,
   onPharmacySelect,
   onGetDirections,
+  onTravelModeChange,
 }: ContentProps) {
   return (
     <>
@@ -341,7 +390,9 @@ function SidebarContent({
             pharmacy={selectedPharmacy}
             locationStatus={locationStatus}
             distance={distances[selectedPharmacy.name]}
+            travelMode={travelMode}
             onGetDirections={onGetDirections}
+            onTravelModeChange={onTravelModeChange}
           />
         </div>
       )}

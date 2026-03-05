@@ -9,8 +9,10 @@ import type { DistanceResult } from '../lib/distance';
 const API_KEY = import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
 const MAP_ID = import.meta.env.PUBLIC_GOOGLE_MAP_ID ?? '';
 const BARILOCHE_CENTER = { lat: -41.1335, lng: -71.3103 };
+const ROUTE_COLOR = '#1a73e8';
 
 export type LocationStatus = 'idle' | 'loading' | 'denied' | 'unavailable';
+export type TravelMode = 'DRIVING' | 'WALKING';
 
 function localToday(): string {
   const d = new Date();
@@ -37,9 +39,10 @@ function mostRecentAvailable(dates: string[], target: string): string {
 interface DirectionsLayerProps {
   origin: google.maps.LatLngLiteral;
   destination: google.maps.LatLngLiteral;
+  travelMode: TravelMode;
 }
 
-function DirectionsLayer({ origin, destination }: DirectionsLayerProps) {
+function DirectionsLayer({ origin, destination, travelMode }: DirectionsLayerProps) {
   const map = useMap();
   const routesLibrary = useMapsLibrary('routes');
   const [directionsService, setDirectionsService] = useState<google.maps.DirectionsService | null>(null);
@@ -47,22 +50,49 @@ function DirectionsLayer({ origin, destination }: DirectionsLayerProps) {
 
   useEffect(() => {
     if (!routesLibrary || !map) return;
+    const polylineOptions: google.maps.PolylineOptions =
+      travelMode === 'WALKING'
+        ? {
+            strokeOpacity: 0,
+            icons: [{
+              icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                fillOpacity: 1,
+                fillColor: ROUTE_COLOR,
+                strokeOpacity: 0,
+                scale: 3,
+              },
+              offset: '0',
+              repeat: '12px',
+            }],
+          }
+        : {
+            strokeColor: ROUTE_COLOR,
+            strokeOpacity: 1,
+            strokeWeight: 5,
+          };
+
     const renderer = new routesLibrary.DirectionsRenderer({
       map,
       suppressMarkers: true, // we use our own AdvancedMarkers
+      polylineOptions,
     });
     setDirectionsService(new routesLibrary.DirectionsService());
     setDirectionsRenderer(renderer);
     return () => renderer.setMap(null);
-  }, [routesLibrary, map]);
+  }, [routesLibrary, map, travelMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!directionsService || !directionsRenderer || !routesLibrary) return;
+    const mode =
+      travelMode === 'WALKING'
+        ? routesLibrary.TravelMode.WALKING
+        : routesLibrary.TravelMode.DRIVING;
     directionsService
-      .route({ origin, destination, travelMode: routesLibrary.TravelMode.DRIVING })
+      .route({ origin, destination, travelMode: mode })
       .then(result => directionsRenderer.setDirections(result))
       .catch(() => {});
-  }, [directionsService, directionsRenderer, routesLibrary, origin, destination]);
+  }, [directionsService, directionsRenderer, routesLibrary, origin, destination, travelMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return null;
 }
@@ -110,9 +140,12 @@ export default function PharmacyMap({ pharmacies }: Props) {
   const [userLocation, setUserLocation] = useState<google.maps.LatLngLiteral | null>(null);
   const [locationStatus, setLocationStatus] = useState<LocationStatus>('idle');
   const [distances, setDistances] = useState<Record<string, DistanceResult>>({});
+  const [travelMode, setTravelMode] = useState<TravelMode>('DRIVING');
 
   useEffect(() => {
     setIsDark(document.documentElement.classList.contains('dark'));
+    const saved = localStorage.getItem('travelMode') as TravelMode | null;
+    if (saved) setTravelMode(saved);
   }, []);
 
   const pharmaciesForDay = pharmacies.filter(p => p.date === selectedDate);
@@ -164,6 +197,11 @@ export default function PharmacyMap({ pharmacies }: Props) {
     );
   }
 
+  function handleTravelModeChange(mode: TravelMode) {
+    setTravelMode(mode);
+    localStorage.setItem('travelMode', mode);
+  }
+
   const showDirections =
     userLocation !== null &&
     selectedPharmacy !== null &&
@@ -181,11 +219,13 @@ export default function PharmacyMap({ pharmacies }: Props) {
           isDark={isDark}
           locationStatus={locationStatus}
           distances={distances}
+          travelMode={travelMode}
           onDateChange={handleDateChange}
           onPharmacySelect={setSelectedPharmacy}
           onPharmacyDeselect={() => setSelectedPharmacy(null)}
           onToggleTheme={toggleTheme}
           onGetDirections={handleGetDirections}
+          onTravelModeChange={handleTravelModeChange}
         />
 
         <div className="flex-1 relative">
@@ -218,6 +258,7 @@ export default function PharmacyMap({ pharmacies }: Props) {
                 <DirectionsLayer
                   origin={userLocation!}
                   destination={{ lat: selectedPharmacy!.lat, lng: selectedPharmacy!.lng }}
+                  travelMode={travelMode}
                 />
               )}
             </Map>
