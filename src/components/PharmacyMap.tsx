@@ -1,10 +1,26 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { APIProvider, Map, AdvancedMarker, useMapsLibrary, useMap } from '@vis.gl/react-google-maps';
 import Sidebar from './Sidebar';
 import { enrichWithPlaces } from '../lib/places';
 import { getDistance } from '../lib/distance';
 import type { Pharmacy, PharmacyEnriched, PlacesCache } from '../types/pharmacy';
 import type { DistanceResult } from '../lib/distance';
+
+const REROUTE_THRESHOLD_METERS = 50;
+
+function gpsDisplacementMeters(
+  a: google.maps.LatLngLiteral,
+  b: google.maps.LatLngLiteral,
+): number {
+  const R = 6_371_000;
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+}
 
 const API_KEY = import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
 const MAP_ID = import.meta.env.PUBLIC_GOOGLE_MAP_ID ?? '';
@@ -75,6 +91,7 @@ function DirectionsLayer({ origin, destination, travelMode }: DirectionsLayerPro
     const renderer = new routesLibrary.DirectionsRenderer({
       map,
       suppressMarkers: true, // we use our own AdvancedMarkers
+      preserveViewport: true, // prevent auto-fitting bounds on each setDirections call
       polylineOptions,
     });
     setDirectionsService(new routesLibrary.DirectionsService());
@@ -141,6 +158,9 @@ export default function PharmacyMap({ pharmacies }: Props) {
   const [locationStatus, setLocationStatus] = useState<LocationStatus>('idle');
   const [distances, setDistances] = useState<Record<string, DistanceResult>>({});
   const [travelMode, setTravelMode] = useState<TravelMode>('DRIVING');
+  const [routeOrigin, setRouteOrigin] = useState<google.maps.LatLngLiteral | null>(null);
+  const watchIdRef = useRef<number | null>(null);
+  const lastRouteOriginRef = useRef<google.maps.LatLngLiteral | null>(null);
 
   useEffect(() => {
     setIsDark(document.documentElement.classList.contains('dark'));
@@ -166,6 +186,45 @@ export default function PharmacyMap({ pharmacies }: Props) {
       )
     ).then(entries => setDistances(Object.fromEntries(entries)));
   }, [userLocation, selectedDate, placesCache]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const hasLocation = userLocation !== null;
+  const hasSelection = selectedPharmacy !== null;
+
+  useEffect(() => {
+    if (!hasLocation || !hasSelection || !navigator.geolocation) {
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
+      }
+      return;
+    }
+
+    lastRouteOriginRef.current = userLocation!;
+    setRouteOrigin(userLocation!);
+
+    const id = navigator.geolocation.watchPosition(
+      pos => {
+        const newPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setUserLocation(newPos);
+        if (
+          lastRouteOriginRef.current &&
+          gpsDisplacementMeters(newPos, lastRouteOriginRef.current) > REROUTE_THRESHOLD_METERS
+        ) {
+          lastRouteOriginRef.current = newPos;
+          setRouteOrigin(newPos);
+        }
+      },
+      () => {},
+      { enableHighAccuracy: true },
+    );
+
+    watchIdRef.current = id;
+
+    return () => {
+      navigator.geolocation.clearWatch(id);
+      watchIdRef.current = null;
+    };
+  }, [hasLocation, hasSelection, selectedPharmacy]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function toggleTheme() {
     const next = !isDark;
@@ -203,7 +262,7 @@ export default function PharmacyMap({ pharmacies }: Props) {
   }
 
   const showDirections =
-    userLocation !== null &&
+    routeOrigin !== null &&
     selectedPharmacy !== null &&
     selectedPharmacy.lat !== 0;
 
@@ -256,7 +315,7 @@ export default function PharmacyMap({ pharmacies }: Props) {
               <MapCenterer pharmacy={selectedPharmacy} />
               {showDirections && (
                 <DirectionsLayer
-                  origin={userLocation!}
+                  origin={routeOrigin!}
                   destination={{ lat: selectedPharmacy!.lat, lng: selectedPharmacy!.lng }}
                   travelMode={travelMode}
                 />
