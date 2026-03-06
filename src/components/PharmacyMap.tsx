@@ -313,6 +313,7 @@ export default function PharmacyMap({ pharmacies }: Props) {
               mapId={MAP_ID}
               colorScheme={isDark ? 'DARK' : 'LIGHT'}
               gestureHandling="greedy"
+              streetViewControl={false}
               reuseMaps
               style={{ width: '100%', height: '100%' }}
             >
