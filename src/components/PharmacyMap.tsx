@@ -35,6 +35,24 @@ function localToday(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+function localYesterday(): string {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function getActivePharmacies(pharmacies: Pharmacy[], selectedDate: string, today: string): Pharmacy[] {
+  if (selectedDate !== today) {
+    return pharmacies.filter(p => p.date === selectedDate);
+  }
+  const hour = new Date().getHours();
+  if (hour < 9) {
+    return pharmacies.filter(p => p.date === localYesterday()).slice(0, 2);
+  }
+  const forToday = pharmacies.filter(p => p.date === today);
+  return hour >= 23 ? forToday.slice(0, 2) : forToday;
+}
+
 function applyCache(pharmacies: Pharmacy[], cache: PlacesCache): PharmacyEnriched[] {
   return pharmacies.map(p => ({
     ...p,
@@ -168,7 +186,7 @@ export default function PharmacyMap({ pharmacies }: Props) {
     if (saved) setTravelMode(saved);
   }, []);
 
-  const pharmaciesForDay = pharmacies.filter(p => p.date === selectedDate);
+  const pharmaciesForDay = getActivePharmacies(pharmacies, selectedDate, today);
 
   useEffect(() => {
     if (!API_KEY || pharmaciesForDay.length === 0) return;
