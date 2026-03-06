@@ -1,6 +1,6 @@
 import type { PlacesCache, PlacesData } from '../types/pharmacy';
 
-const CACHE_KEY = 'farmaturno_places_cache';
+const CACHE_KEY = 'farmaturno_places_cache_v1';
 const PLACES_URL = 'https://places.googleapis.com/v1/places:searchText';
 const BARILOCHE_CENTER = { latitude: -41.1335, longitude: -71.3103 };
 

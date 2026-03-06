@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { APIProvider, Map, AdvancedMarker, useMapsLibrary, useMap } from '@vis.gl/react-google-maps';
 import Sidebar from './Sidebar';
 import { enrichWithPlaces } from '../lib/places';
@@ -132,14 +132,12 @@ function DirectionsLayer({ origin, destination, travelMode }: DirectionsLayerPro
   return null;
 }
 
-function UserLocationMarker() {
-  return (
-    <div className="relative flex items-center justify-center w-5 h-5">
-      <div className="absolute w-5 h-5 rounded-full bg-blue-400 opacity-75 motion-safe:animate-ping" />
-      <div className="w-3.5 h-3.5 rounded-full bg-blue-500 border-2 border-white shadow-md" />
-    </div>
-  );
-}
+const USER_LOCATION_MARKER = (
+  <div className="relative flex items-center justify-center w-5 h-5">
+    <div className="absolute w-5 h-5 rounded-full bg-blue-400 opacity-75 motion-safe:animate-ping" />
+    <div className="w-3.5 h-3.5 rounded-full bg-blue-500 border-2 border-white shadow-md" />
+  </div>
+);
 
 function MapCenterer({ pharmacy }: { pharmacy: PharmacyEnriched | null }) {
   const map = useMap();
@@ -159,12 +157,12 @@ interface Props {
 
 export default function PharmacyMap({ pharmacies }: Props) {
   const today = localToday();
-  const d7back = new Date(today + 'T12:00:00');
-  d7back.setDate(d7back.getDate() - 7);
-  const minDate = d7back.toISOString().slice(0, 10);
-  const availableDates = [...new Set(pharmacies.map(p => p.date))]
-    .filter(d => d >= minDate)
-    .sort();
+  const availableDates = useMemo(() => {
+    const d7back = new Date(today + 'T12:00:00');
+    d7back.setDate(d7back.getDate() - 7);
+    const minDate = d7back.toISOString().slice(0, 10);
+    return [...new Set(pharmacies.map(p => p.date))].filter(d => d >= minDate).sort();
+  }, [pharmacies]);
 
   const [selectedDate, setSelectedDate] = useState(() =>
     mostRecentAvailable(availableDates, today)
@@ -274,6 +272,8 @@ export default function PharmacyMap({ pharmacies }: Props) {
     );
   }
 
+  const handlePharmacyDeselect = useCallback(() => setSelectedPharmacy(null), []);
+
   function handleTravelModeChange(mode: TravelMode) {
     setTravelMode(mode);
     localStorage.setItem('travelMode', mode);
@@ -299,7 +299,7 @@ export default function PharmacyMap({ pharmacies }: Props) {
           travelMode={travelMode}
           onDateChange={handleDateChange}
           onPharmacySelect={setSelectedPharmacy}
-          onPharmacyDeselect={() => setSelectedPharmacy(null)}
+          onPharmacyDeselect={handlePharmacyDeselect}
           onToggleTheme={toggleTheme}
           onGetDirections={handleGetDirections}
           onTravelModeChange={handleTravelModeChange}
@@ -328,7 +328,7 @@ export default function PharmacyMap({ pharmacies }: Props) {
               )}
               {userLocation && (
                 <AdvancedMarker position={userLocation}>
-                  <UserLocationMarker />
+                  {USER_LOCATION_MARKER}
                 </AdvancedMarker>
               )}
               <MapCenterer pharmacy={selectedPharmacy} />
