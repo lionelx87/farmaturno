@@ -14,6 +14,8 @@ const { title = 'Farmaturno' } = Astro.props;
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
+    <link rel="preconnect" href="https://maps.googleapis.com">
+    <link rel="preconnect" href="https://maps.gstatic.com" crossorigin>
     <title>{title}</title>
     <script is:inline>
       const saved = localStorage.getItem('theme');
