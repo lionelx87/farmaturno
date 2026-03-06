@@ -59,7 +59,7 @@ function PharmacyDetailCard({ pharmacy, locationStatus, distance, travelMode, on
           <div className="flex flex-col rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 flex-shrink-0">
             <button
               onClick={() => onTravelModeChange('WALKING')}
-              className={`flex items-center justify-center p-2 transition-colors ${
+              className={`flex items-center justify-center p-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 ${
                 travelMode === 'WALKING'
                   ? 'bg-green-600 text-white'
                   : 'bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
@@ -72,7 +72,7 @@ function PharmacyDetailCard({ pharmacy, locationStatus, distance, travelMode, on
             </button>
             <button
               onClick={() => onTravelModeChange('DRIVING')}
-              className={`flex items-center justify-center p-2 transition-colors border-t border-gray-200 dark:border-gray-700 ${
+              className={`flex items-center justify-center p-2 transition-colors border-t border-gray-200 dark:border-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 ${
                 travelMode === 'DRIVING'
                   ? 'bg-green-600 text-white'
                   : 'bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
@@ -93,12 +93,12 @@ function PharmacyDetailCard({ pharmacy, locationStatus, distance, travelMode, on
           <button
             onClick={onGetDirections}
             disabled={locationStatus === 'loading'}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-green-600 hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-green-600 hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
               <path d="M21.71 11.29l-9-9a1 1 0 0 0-1.42 0l-9 9a1 1 0 0 0 0 1.42l9 9a1 1 0 0 0 1.42 0l9-9a1 1 0 0 0 0-1.42zM14 14.5V12h-4v3H8v-4a1 1 0 0 1 1-1h5V7.5l3.5 3.5-3.5 3.5z" />
             </svg>
-            {locationStatus === 'loading' ? 'Obteniendo ubicación...' : 'Cómo llegar'}
+            {locationStatus === 'loading' ? 'Obteniendo ubicación…' : 'Cómo llegar'}
           </button>
           {locationStatus === 'denied' && (
             <p className="text-xs text-red-500 dark:text-red-400">
@@ -182,7 +182,7 @@ export default function Sidebar({
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800">
               <button
                 onClick={onPharmacyDeselect}
-                className="flex items-center gap-1.5 text-sm font-medium text-green-600 dark:text-green-400"
+                className="flex items-center gap-1.5 text-sm font-medium text-green-600 dark:text-green-400 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
@@ -219,12 +219,12 @@ export default function Sidebar({
         ) : (
           /* List mode: expandible */
           <div
-            className={`absolute bottom-0 left-0 right-0 pointer-events-auto flex flex-col rounded-t-2xl border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 transition-all duration-300 ${
+            className={`absolute bottom-0 left-0 right-0 pointer-events-auto flex flex-col rounded-t-2xl border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 transition-[height] duration-300 ${
               isExpanded ? 'h-[70vh]' : 'h-[42vh]'
             }`}
           >
             <button
-              className="flex justify-center pt-3 pb-1"
+              className="flex justify-center pt-3 pb-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500"
               onClick={() => setIsExpanded(e => !e)}
               aria-label={isExpanded ? 'Contraer' : 'Expandir'}
             >
@@ -305,7 +305,7 @@ function SidebarContent({
         </div>
         <button
           onClick={onToggleTheme}
-          className="p-2 rounded-lg text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          className="p-2 rounded-lg text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500"
           aria-label="Alternar tema"
         >
           {isDark ? (
@@ -325,7 +325,7 @@ function SidebarContent({
         <button
           onClick={onPrev}
           disabled={!canGoPrev}
-          className="p-2 rounded-lg text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          className="p-2 rounded-lg text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-30 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500"
           aria-label="Día anterior"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -338,7 +338,7 @@ function SidebarContent({
         <button
           onClick={onNext}
           disabled={!canGoNext}
-          className="p-2 rounded-lg text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          className="p-2 rounded-lg text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-30 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500"
           aria-label="Día siguiente"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -358,7 +358,7 @@ function SidebarContent({
             <button
               key={p.name}
               onClick={() => onPharmacySelect(p)}
-              className={`w-full flex items-center gap-3 px-4 py-4 border-b border-gray-100 dark:border-gray-800 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-900 ${
+              className={`w-full flex items-center gap-3 px-4 py-4 border-b border-gray-100 dark:border-gray-800 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-green-500 ${
                 selectedPharmacy?.name === p.name
                   ? 'bg-green-50 dark:bg-green-950'
                   : ''
@@ -377,7 +377,7 @@ function SidebarContent({
                 <a
                   href={`tel:${p.phone!.replace(/\D/g, '')}`}
                   onClick={e => e.stopPropagation()}
-                  className="flex-shrink-0 p-2 rounded-lg text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900 transition-colors"
+                  className="flex-shrink-0 p-2 rounded-lg text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500"
                   aria-label={`Llamar a ${p.name}`}
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">

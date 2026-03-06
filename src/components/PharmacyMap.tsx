@@ -135,7 +135,7 @@ function DirectionsLayer({ origin, destination, travelMode }: DirectionsLayerPro
 function UserLocationMarker() {
   return (
     <div className="relative flex items-center justify-center w-5 h-5">
-      <div className="absolute w-5 h-5 rounded-full bg-blue-400 opacity-75 animate-ping" />
+      <div className="absolute w-5 h-5 rounded-full bg-blue-400 opacity-75 motion-safe:animate-ping" />
       <div className="w-3.5 h-3.5 rounded-full bg-blue-500 border-2 border-white shadow-md" />
     </div>
   );
