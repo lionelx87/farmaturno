@@ -1,79 +1,23 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { APIProvider, Map, AdvancedMarker, useMapsLibrary, useMap } from '@vis.gl/react-google-maps';
 import Sidebar from './Sidebar';
-import { enrichWithPlaces } from '../lib/places';
-import { getDistance } from '../lib/distance';
-import type { Pharmacy, PharmacyEnriched, PlacesCache } from '../types/pharmacy';
-import type { DistanceResult } from '../lib/distance';
+import { PharmacyAppProvider, usePharmacyApp } from './PharmacyAppContext';
+import type { Pharmacy, PharmacyEnriched } from '../types/pharmacy';
 
-const REROUTE_THRESHOLD_METERS = 50;
-
-function gpsDisplacementMeters(
-  a: google.maps.LatLngLiteral,
-  b: google.maps.LatLngLiteral,
-): number {
-  const R = 6_371_000;
-  const toRad = (deg: number) => (deg * Math.PI) / 180;
-  const dLat = toRad(b.lat - a.lat);
-  const dLng = toRad(b.lng - a.lng);
-  const h =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
-}
+// Re-exported for Sidebar until step 3 migrates it to read from context
+export type { LocationStatus, TravelMode } from './PharmacyAppContext';
 
 const API_KEY = import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
 const MAP_ID = import.meta.env.PUBLIC_GOOGLE_MAP_ID ?? '';
 const BARILOCHE_CENTER = { lat: -41.1335, lng: -71.3103 };
 const ROUTE_COLOR = '#1a73e8';
 
-export type LocationStatus = 'idle' | 'loading' | 'denied' | 'unavailable';
-export type TravelMode = 'DRIVING' | 'WALKING';
-
-function localToday(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-function localYesterday(): string {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-function getActivePharmacies(pharmacies: Pharmacy[], selectedDate: string, today: string): Pharmacy[] {
-  if (selectedDate !== today) {
-    return pharmacies.filter(p => p.date === selectedDate);
-  }
-  const hour = new Date().getHours();
-  if (hour < 9) {
-    return pharmacies.filter(p => p.date === localYesterday()).slice(0, 2);
-  }
-  const forToday = pharmacies.filter(p => p.date === today);
-  return hour >= 23 ? forToday.slice(0, 2) : forToday;
-}
-
-function applyCache(pharmacies: Pharmacy[], cache: PlacesCache): PharmacyEnriched[] {
-  return pharmacies.map(p => ({
-    ...p,
-    phone: cache[p.name]?.phone ?? null,
-    lat: cache[p.name]?.lat ?? 0,
-    lng: cache[p.name]?.lng ?? 0,
-  }));
-}
-
-function mostRecentAvailable(dates: string[], target: string): string {
-  const past = dates.filter(d => d <= target);
-  return past.length > 0 ? past[past.length - 1] : (dates[0] ?? target);
-}
-
-// ── DirectionsLayer ──────────────────────────────────────────────────────────
-// Must render inside <Map> to access the map instance via useMap()
+// ── DirectionsLayer ───────────────────────────────────────────────────────────
 
 interface DirectionsLayerProps {
   origin: google.maps.LatLngLiteral;
   destination: google.maps.LatLngLiteral;
-  travelMode: TravelMode;
+  travelMode: 'DRIVING' | 'WALKING';
 }
 
 function DirectionsLayer({ origin, destination, travelMode }: DirectionsLayerProps) {
@@ -108,8 +52,8 @@ function DirectionsLayer({ origin, destination, travelMode }: DirectionsLayerPro
 
     const renderer = new routesLibrary.DirectionsRenderer({
       map,
-      suppressMarkers: true, // we use our own AdvancedMarkers
-      preserveViewport: true, // prevent auto-fitting bounds on each setDirections call
+      suppressMarkers: true,
+      preserveViewport: true,
       polylineOptions,
     });
     setDirectionsService(new routesLibrary.DirectionsService());
@@ -132,12 +76,7 @@ function DirectionsLayer({ origin, destination, travelMode }: DirectionsLayerPro
   return null;
 }
 
-const USER_LOCATION_MARKER = (
-  <div className="relative flex items-center justify-center w-5 h-5">
-    <div className="absolute w-5 h-5 rounded-full bg-blue-400 opacity-75 motion-safe:animate-ping" />
-    <div className="w-3.5 h-3.5 rounded-full bg-blue-500 border-2 border-white shadow-md" />
-  </div>
-);
+// ── MapCenterer ───────────────────────────────────────────────────────────────
 
 function MapCenterer({ pharmacy }: { pharmacy: PharmacyEnriched | null }) {
   const map = useMap();
@@ -149,218 +88,105 @@ function MapCenterer({ pharmacy }: { pharmacy: PharmacyEnriched | null }) {
   return null;
 }
 
-// ── PharmacyMap ──────────────────────────────────────────────────────────────
+// ── User location marker (static JSX, no re-renders) ─────────────────────────
+
+const USER_LOCATION_MARKER = (
+  <div className="relative flex items-center justify-center w-5 h-5">
+    <div className="absolute w-5 h-5 rounded-full bg-blue-400 opacity-75 motion-safe:animate-ping" />
+    <div className="w-3.5 h-3.5 rounded-full bg-blue-500 border-2 border-white shadow-md" />
+  </div>
+);
+
+// ── MapLayout — reads from context, renders map + sidebar ─────────────────────
+
+function MapLayout() {
+  const {
+    pharmaciesForDate,
+    selectedPharmacy,
+    userLocation,
+    isDark,
+    showDirections,
+    routeOrigin,
+    travelMode,
+    onPharmacySelect,
+  } = usePharmacyApp();
+
+  return (
+    <div className="flex h-screen overflow-hidden bg-white dark:bg-gray-950">
+
+      <Sidebar />
+
+      <div className="flex-1 relative">
+        {API_KEY ? (
+          <Map
+            defaultCenter={BARILOCHE_CENTER}
+            defaultZoom={13}
+            mapId={MAP_ID}
+            colorScheme={isDark ? 'DARK' : 'LIGHT'}
+            gestureHandling="greedy"
+            streetViewControl={false}
+            reuseMaps
+            style={{ width: '100%', height: '100%' }}
+          >
+            {pharmaciesForDate.map(p =>
+              p.lat !== 0 && (
+                <AdvancedMarker
+                  key={p.name}
+                  position={{ lat: p.lat, lng: p.lng }}
+                  onClick={() => onPharmacySelect(p)}
+                >
+                  <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 shadow-md transition-transform duration-150 ${
+                    selectedPharmacy?.name === p.name
+                      ? 'bg-green-600 border-white scale-125'
+                      : 'bg-white border-green-500'
+                  }`}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill={selectedPharmacy?.name === p.name ? 'white' : '#16a34a'}>
+                      <rect x="10" y="3" width="4" height="18" rx="1.5" />
+                      <rect x="3" y="10" width="18" height="4" rx="1.5" />
+                    </svg>
+                  </div>
+                </AdvancedMarker>
+              )
+            )}
+            {userLocation && (
+              <AdvancedMarker position={userLocation}>
+                {USER_LOCATION_MARKER}
+              </AdvancedMarker>
+            )}
+            <MapCenterer pharmacy={selectedPharmacy} />
+            {showDirections && (
+              <DirectionsLayer
+                origin={routeOrigin!}
+                destination={{ lat: selectedPharmacy!.lat, lng: selectedPharmacy!.lng }}
+                travelMode={travelMode}
+              />
+            )}
+          </Map>
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Mapa no disponible — configurar PUBLIC_GOOGLE_MAPS_API_KEY
+            </p>
+          </div>
+        )}
+      </div>
+
+    </div>
+  );
+}
+
+// ── PharmacyMap — entry point, sets up providers ──────────────────────────────
 
 interface Props {
   pharmacies: Pharmacy[];
 }
 
 export default function PharmacyMap({ pharmacies }: Props) {
-  const today = localToday();
-  const availableDates = useMemo(() => {
-    const d7back = new Date(today + 'T12:00:00');
-    d7back.setDate(d7back.getDate() - 7);
-    const minDate = d7back.toISOString().slice(0, 10);
-    return [...new Set(pharmacies.map(p => p.date))].filter(d => d >= minDate).sort();
-  }, [pharmacies]);
-
-  const [selectedDate, setSelectedDate] = useState(() =>
-    mostRecentAvailable(availableDates, today)
-  );
-  const [selectedPharmacy, setSelectedPharmacy] = useState<PharmacyEnriched | null>(null);
-  const [isDark, setIsDark] = useState(false);
-  const [placesCache, setPlacesCache] = useState<PlacesCache>({});
-  const [userLocation, setUserLocation] = useState<google.maps.LatLngLiteral | null>(null);
-  const [locationStatus, setLocationStatus] = useState<LocationStatus>('idle');
-  const [distances, setDistances] = useState<Record<string, DistanceResult>>({});
-  const [travelMode, setTravelMode] = useState<TravelMode>('DRIVING');
-  const [routeOrigin, setRouteOrigin] = useState<google.maps.LatLngLiteral | null>(null);
-  const watchIdRef = useRef<number | null>(null);
-  const lastRouteOriginRef = useRef<google.maps.LatLngLiteral | null>(null);
-
-  useEffect(() => {
-    setIsDark(document.documentElement.classList.contains('dark'));
-    const saved = localStorage.getItem('travelMode') as TravelMode | null;
-    if (saved) setTravelMode(saved);
-  }, []);
-
-  const pharmaciesForDay = getActivePharmacies(pharmacies, selectedDate, today);
-
-  useEffect(() => {
-    if (!API_KEY || pharmaciesForDay.length === 0) return;
-    enrichWithPlaces(pharmaciesForDay.map(p => ({ name: p.name, address: p.address })), API_KEY).then(setPlacesCache);
-  }, [selectedDate]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const pharmaciesForDate = applyCache(pharmaciesForDay, placesCache);
-
-  useEffect(() => {
-    if (!userLocation) return;
-    const located = pharmaciesForDate.filter(p => p.lat !== 0);
-    Promise.all(
-      located.map(p =>
-        getDistance(userLocation, { lat: p.lat, lng: p.lng }).then(r => [p.name, r] as const)
-      )
-    ).then(entries => setDistances(Object.fromEntries(entries)));
-  }, [userLocation, selectedDate, placesCache]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const hasLocation = userLocation !== null;
-  const hasSelection = selectedPharmacy !== null;
-
-  useEffect(() => {
-    if (!hasLocation || !hasSelection || !navigator.geolocation) {
-      if (watchIdRef.current !== null) {
-        navigator.geolocation.clearWatch(watchIdRef.current);
-        watchIdRef.current = null;
-      }
-      return;
-    }
-
-    lastRouteOriginRef.current = userLocation!;
-    setRouteOrigin(userLocation!);
-
-    const id = navigator.geolocation.watchPosition(
-      pos => {
-        const newPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        setUserLocation(newPos);
-        if (
-          lastRouteOriginRef.current &&
-          gpsDisplacementMeters(newPos, lastRouteOriginRef.current) > REROUTE_THRESHOLD_METERS
-        ) {
-          lastRouteOriginRef.current = newPos;
-          setRouteOrigin(newPos);
-        }
-      },
-      () => {},
-      { enableHighAccuracy: true },
-    );
-
-    watchIdRef.current = id;
-
-    return () => {
-      navigator.geolocation.clearWatch(id);
-      watchIdRef.current = null;
-    };
-  }, [hasLocation, hasSelection, selectedPharmacy]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  function toggleTheme() {
-    const next = !isDark;
-    setIsDark(next);
-    document.documentElement.classList.toggle('dark', next);
-    localStorage.setItem('theme', next ? 'dark' : 'light');
-  }
-
-  function handleDateChange(date: string) {
-    setSelectedDate(date);
-    setSelectedPharmacy(null);
-  }
-
-  function handleGetDirections() {
-    if (!navigator.geolocation) {
-      setLocationStatus('unavailable');
-      return;
-    }
-    setLocationStatus('loading');
-    navigator.geolocation.getCurrentPosition(
-      pos => {
-        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        setLocationStatus('idle');
-      },
-      err => {
-        setLocationStatus(err.code === 1 ? 'denied' : 'unavailable');
-      },
-      { enableHighAccuracy: true }
-    );
-  }
-
-  const handlePharmacyDeselect = useCallback(() => setSelectedPharmacy(null), []);
-
-  function handleTravelModeChange(mode: TravelMode) {
-    setTravelMode(mode);
-    localStorage.setItem('travelMode', mode);
-  }
-
-  const showDirections =
-    routeOrigin !== null &&
-    selectedPharmacy !== null &&
-    selectedPharmacy.lat !== 0;
-
   return (
-    <APIProvider apiKey={API_KEY}>
-      <div className="flex h-screen overflow-hidden bg-white dark:bg-gray-950">
-
-        <Sidebar
-          pharmacies={pharmaciesForDate}
-          selectedDate={selectedDate}
-          selectedPharmacy={selectedPharmacy}
-          availableDates={availableDates}
-          isDark={isDark}
-          locationStatus={locationStatus}
-          distances={distances}
-          travelMode={travelMode}
-          onDateChange={handleDateChange}
-          onPharmacySelect={setSelectedPharmacy}
-          onPharmacyDeselect={handlePharmacyDeselect}
-          onToggleTheme={toggleTheme}
-          onGetDirections={handleGetDirections}
-          onTravelModeChange={handleTravelModeChange}
-        />
-
-        <div className="flex-1 relative">
-          {API_KEY ? (
-            <Map
-              defaultCenter={BARILOCHE_CENTER}
-              defaultZoom={13}
-              mapId={MAP_ID}
-              colorScheme={isDark ? 'DARK' : 'LIGHT'}
-              gestureHandling="greedy"
-              streetViewControl={false}
-              reuseMaps
-              style={{ width: '100%', height: '100%' }}
-            >
-              {pharmaciesForDate.map(p =>
-                p.lat !== 0 && (
-                  <AdvancedMarker
-                    key={p.name}
-                    position={{ lat: p.lat, lng: p.lng }}
-                    onClick={() => setSelectedPharmacy(p)}
-                  >
-                    <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 shadow-md transition-transform duration-150 ${
-                      selectedPharmacy?.name === p.name
-                        ? 'bg-green-600 border-white scale-125'
-                        : 'bg-white border-green-500'
-                    }`}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill={selectedPharmacy?.name === p.name ? 'white' : '#16a34a'}>
-                        <rect x="10" y="3" width="4" height="18" rx="1.5" />
-                        <rect x="3" y="10" width="18" height="4" rx="1.5" />
-                      </svg>
-                    </div>
-                  </AdvancedMarker>
-                )
-              )}
-              {userLocation && (
-                <AdvancedMarker position={userLocation}>
-                  {USER_LOCATION_MARKER}
-                </AdvancedMarker>
-              )}
-              <MapCenterer pharmacy={selectedPharmacy} />
-              {showDirections && (
-                <DirectionsLayer
-                  origin={routeOrigin!}
-                  destination={{ lat: selectedPharmacy!.lat, lng: selectedPharmacy!.lng }}
-                  travelMode={travelMode}
-                />
-              )}
-            </Map>
-          ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-900">
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Mapa no disponible — configurar PUBLIC_GOOGLE_MAPS_API_KEY
-              </p>
-            </div>
-          )}
-        </div>
-
-      </div>
-    </APIProvider>
+    <PharmacyAppProvider pharmacies={pharmacies}>
+      <APIProvider apiKey={API_KEY}>
+        <MapLayout />
+      </APIProvider>
+    </PharmacyAppProvider>
   );
 }

@@ -1,27 +1,8 @@
 import { useState } from 'react';
+import { usePharmacyApp } from './PharmacyAppContext';
 import type { PharmacyEnriched } from '../types/pharmacy';
-import type { LocationStatus, TravelMode } from './PharmacyMap';
-import type { DistanceResult } from '../lib/distance';
-
-interface Props {
-  pharmacies: PharmacyEnriched[];
-  selectedDate: string;
-  selectedPharmacy: PharmacyEnriched | null;
-  availableDates: string[];
-  isDark: boolean;
-  locationStatus: LocationStatus;
-  distances: Record<string, DistanceResult>;
-  travelMode: TravelMode;
-  onDateChange: (date: string) => void;
-  onPharmacySelect: (pharmacy: PharmacyEnriched) => void;
-  onPharmacyDeselect: () => void;
-  onToggleTheme: () => void;
-  onGetDirections: () => void;
-  onTravelModeChange: (mode: TravelMode) => void;
-}
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
-
 
 function SunIcon() {
   return (
@@ -97,14 +78,10 @@ function DirectionsIcon() {
 
 // ── Detail card ───────────────────────────────────────────────────────────────
 
-function PharmacyDetailCard({ pharmacy, locationStatus, distance, travelMode, onGetDirections, onTravelModeChange }: {
-  pharmacy: PharmacyEnriched;
-  locationStatus: LocationStatus;
-  distance?: DistanceResult;
-  travelMode: TravelMode;
-  onGetDirections: () => void;
-  onTravelModeChange: (mode: TravelMode) => void;
-}) {
+function PharmacyDetailCard({ pharmacy }: { pharmacy: PharmacyEnriched }) {
+  const { locationStatus, distances, travelMode, onGetDirections, onTravelModeChange } = usePharmacyApp();
+  const distance = distances[pharmacy.name];
+
   return (
     <>
       <div className="flex items-start gap-3">
@@ -131,7 +108,7 @@ function PharmacyDetailCard({ pharmacy, locationStatus, distance, travelMode, on
         </div>
 
         {pharmacy.lat !== 0 && (
-          <div className="flex flex-col rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 flex-shrink-0">
+          <div className="flex flex-col rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shrink-0">
             <button
               onClick={() => onTravelModeChange('WALKING')}
               className={`flex items-center justify-center p-2.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 ${
@@ -196,165 +173,30 @@ function formatDateParts(dateStr: string): { weekday: string; dayMonth: string }
   };
 }
 
-// ── Sidebar ───────────────────────────────────────────────────────────────────
+// ── Shared content ────────────────────────────────────────────────────────────
 
-export default function Sidebar({
-  pharmacies,
-  selectedDate,
-  selectedPharmacy,
-  availableDates,
-  isDark,
-  locationStatus,
-  distances,
-  travelMode,
-  onDateChange,
-  onPharmacySelect,
-  onPharmacyDeselect,
-  onToggleTheme,
-  onGetDirections,
-  onTravelModeChange,
-}: Props) {
-  const [isExpanded, setIsExpanded] = useState(false);
+function SidebarContent() {
+  const {
+    pharmaciesForDate,
+    selectedDate,
+    selectedPharmacy,
+    availableDates,
+    canGoPrev,
+    canGoNext,
+    isDark,
+    distances,
+    onPharmacySelect,
+    onDateChange,
+    onToggleTheme,
+  } = usePharmacyApp();
 
+  const { weekday, dayMonth } = formatDateParts(selectedDate);
   const currentIndex = availableDates.indexOf(selectedDate);
 
   function navigateDate(direction: -1 | 1) {
     const next = availableDates[currentIndex + direction];
     if (next) onDateChange(next);
   }
-
-  return (
-    <>
-      {/* ── DESKTOP sidebar ── */}
-      <aside className="hidden md:flex w-80 flex-shrink-0 flex-col h-full border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950">
-        <SidebarContent
-          pharmacies={pharmacies}
-          selectedDate={selectedDate}
-          selectedPharmacy={selectedPharmacy}
-          canGoPrev={currentIndex > 0}
-          canGoNext={currentIndex < availableDates.length - 1}
-          isDark={isDark}
-          locationStatus={locationStatus}
-          distances={distances}
-          travelMode={travelMode}
-          onPrev={() => navigateDate(-1)}
-          onNext={() => navigateDate(1)}
-          onToggleTheme={onToggleTheme}
-          onPharmacySelect={onPharmacySelect}
-          onGetDirections={onGetDirections}
-          onTravelModeChange={onTravelModeChange}
-        />
-      </aside>
-
-      {/* ── MOBILE bottom sheet ── */}
-      <div className="md:hidden fixed inset-0 pointer-events-none z-20">
-        {selectedPharmacy ? (
-          /* Card mode: compact sheet */
-          <div className="absolute bottom-0 left-0 right-0 pointer-events-auto flex flex-col rounded-t-3xl border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 shadow-[0_-8px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_-8px_32px_rgba(0,0,0,0.4)] h-auto max-h-[55vh] overflow-y-auto">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800">
-              <button
-                onClick={onPharmacyDeselect}
-                className="flex items-center gap-1.5 text-sm font-medium text-green-600 dark:text-green-400 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500"
-              >
-                <ChevronLeft />
-                Lista
-              </button>
-              <button
-                onClick={onToggleTheme}
-                className="p-2 rounded-lg text-gray-400 hover:text-gray-900 dark:text-gray-500 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                aria-label="Alternar tema"
-              >
-                {isDark ? <SunIcon /> : <MoonIcon />}
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4">
-              <PharmacyDetailCard
-                pharmacy={selectedPharmacy}
-                locationStatus={locationStatus}
-                distance={distances[selectedPharmacy.name]}
-                travelMode={travelMode}
-                onGetDirections={onGetDirections}
-                onTravelModeChange={onTravelModeChange}
-              />
-            </div>
-          </div>
-        ) : (
-          /* List mode: expandible */
-          <div
-            className={`absolute bottom-0 left-0 right-0 pointer-events-auto flex flex-col rounded-t-3xl border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 shadow-[0_-8px_32px_rgba(0,0,0,0.10)] dark:shadow-[0_-8px_32px_rgba(0,0,0,0.4)] transition-[height] duration-300 motion-reduce:transition-none ${
-              isExpanded ? 'h-[70vh]' : 'h-[42vh]'
-            }`}
-          >
-            <button
-              className="flex flex-col items-center pt-3 pb-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 rounded-t-3xl"
-              onClick={() => setIsExpanded(e => !e)}
-              aria-label={isExpanded ? 'Contraer' : 'Expandir'}
-            >
-              <span className="w-12 h-1.5 rounded-full bg-gray-300 dark:bg-gray-600" />
-            </button>
-
-            <SidebarContent
-              pharmacies={pharmacies}
-              selectedDate={selectedDate}
-              selectedPharmacy={selectedPharmacy}
-              canGoPrev={currentIndex > 0}
-              canGoNext={currentIndex < availableDates.length - 1}
-              isDark={isDark}
-              locationStatus={locationStatus}
-              distances={distances}
-              travelMode={travelMode}
-              onPrev={() => navigateDate(-1)}
-              onNext={() => navigateDate(1)}
-              onToggleTheme={onToggleTheme}
-              onPharmacySelect={onPharmacySelect}
-              onGetDirections={onGetDirections}
-              onTravelModeChange={onTravelModeChange}
-            />
-          </div>
-        )}
-      </div>
-    </>
-  );
-}
-
-// ── Shared content ────────────────────────────────────────────────────────────
-
-interface ContentProps {
-  pharmacies: PharmacyEnriched[];
-  selectedDate: string;
-  selectedPharmacy: PharmacyEnriched | null;
-  canGoPrev: boolean;
-  canGoNext: boolean;
-  isDark: boolean;
-  locationStatus: LocationStatus;
-  distances: Record<string, DistanceResult>;
-  travelMode: TravelMode;
-  onPrev: () => void;
-  onNext: () => void;
-  onToggleTheme: () => void;
-  onPharmacySelect: (pharmacy: PharmacyEnriched) => void;
-  onGetDirections: () => void;
-  onTravelModeChange: (mode: TravelMode) => void;
-}
-
-function SidebarContent({
-  pharmacies,
-  selectedDate,
-  selectedPharmacy,
-  canGoPrev,
-  canGoNext,
-  isDark,
-  locationStatus,
-  distances,
-  travelMode,
-  onPrev,
-  onNext,
-  onToggleTheme,
-  onPharmacySelect,
-  onGetDirections,
-  onTravelModeChange,
-}: ContentProps) {
-  const { weekday, dayMonth } = formatDateParts(selectedDate);
 
   return (
     <>
@@ -383,7 +225,7 @@ function SidebarContent({
       {/* Date selector */}
       <div className="flex items-center justify-between px-2 py-3 border-b border-gray-200 dark:border-gray-800">
         <button
-          onClick={onPrev}
+          onClick={() => navigateDate(-1)}
           disabled={!canGoPrev}
           className="p-2 rounded-lg text-gray-400 hover:text-gray-900 dark:text-gray-500 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-25 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500"
           aria-label="Día anterior"
@@ -397,7 +239,7 @@ function SidebarContent({
           <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{dayMonth}</p>
         </div>
         <button
-          onClick={onNext}
+          onClick={() => navigateDate(1)}
           disabled={!canGoNext}
           className="p-2 rounded-lg text-gray-400 hover:text-gray-900 dark:text-gray-500 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-25 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500"
           aria-label="Día siguiente"
@@ -408,18 +250,18 @@ function SidebarContent({
 
       {/* Pharmacy list */}
       <div className="flex-1 overflow-y-auto">
-        {pharmacies.length === 0 ? (
+        {pharmaciesForDate.length === 0 ? (
           <p className="px-4 py-8 text-sm text-center text-gray-400 dark:text-gray-500">
             No hay farmacias de turno para este día.
           </p>
         ) : (
-          pharmacies.map(p => {
+          pharmaciesForDate.map(p => {
             const isSelected = selectedPharmacy?.name === p.name;
             return (
               <button
                 key={p.name}
                 onClick={() => onPharmacySelect(p)}
-                className={`w-full flex items-center gap-3 px-[13px] py-3.5 text-left transition-colors border-b border-gray-100 dark:border-gray-800/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-green-500 border-l-[3px] ${
+                className={`w-full flex items-center gap-3 px-3.25 py-3.5 text-left transition-colors border-b border-gray-100 dark:border-gray-800/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-green-500 border-l-[3px] ${
                   isSelected
                     ? 'border-l-green-500 bg-green-50/70 dark:bg-green-950/30 hover:bg-green-50 dark:hover:bg-green-950/40'
                     : 'border-l-transparent hover:bg-gray-50/80 dark:hover:bg-gray-900/60'
@@ -443,7 +285,7 @@ function SidebarContent({
                   <a
                     href={`tel:${p.phone!.replace(/\D/g, '')}`}
                     onClick={e => e.stopPropagation()}
-                    className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500"
+                    className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500"
                     aria-label={`Llamar a ${p.name}`}
                   >
                     <PhoneIcon size={16} />
@@ -458,16 +300,70 @@ function SidebarContent({
       {/* Detail card */}
       {selectedPharmacy && (
         <div className="border-t border-gray-200 dark:border-gray-800 p-4 bg-gray-50/80 dark:bg-gray-900/60">
-          <PharmacyDetailCard
-            pharmacy={selectedPharmacy}
-            locationStatus={locationStatus}
-            distance={distances[selectedPharmacy.name]}
-            travelMode={travelMode}
-            onGetDirections={onGetDirections}
-            onTravelModeChange={onTravelModeChange}
-          />
+          <PharmacyDetailCard pharmacy={selectedPharmacy} />
         </div>
       )}
+    </>
+  );
+}
+
+// ── Sidebar ───────────────────────────────────────────────────────────────────
+
+export default function Sidebar() {
+  const { selectedPharmacy, onPharmacyDeselect, isDark, onToggleTheme } = usePharmacyApp();
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  return (
+    <>
+      {/* ── DESKTOP sidebar ── */}
+      <aside className="hidden md:flex w-80 shrink-0 flex-col h-full border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950">
+        <SidebarContent />
+      </aside>
+
+      {/* ── MOBILE bottom sheet ── */}
+      <div className="md:hidden fixed inset-0 pointer-events-none z-20">
+        {selectedPharmacy ? (
+          /* Card mode: compact sheet */
+          <div className="absolute bottom-0 left-0 right-0 pointer-events-auto flex flex-col rounded-t-3xl border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 shadow-[0_-8px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_-8px_32px_rgba(0,0,0,0.4)] h-auto max-h-[55vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+              <button
+                onClick={onPharmacyDeselect}
+                className="flex items-center gap-1.5 text-sm font-medium text-green-600 dark:text-green-400 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500"
+              >
+                <ChevronLeft />
+                Lista
+              </button>
+              <button
+                onClick={onToggleTheme}
+                className="p-2 rounded-lg text-gray-400 hover:text-gray-900 dark:text-gray-500 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                aria-label="Alternar tema"
+              >
+                {isDark ? <SunIcon /> : <MoonIcon />}
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4">
+              <PharmacyDetailCard pharmacy={selectedPharmacy} />
+            </div>
+          </div>
+        ) : (
+          /* List mode: expandible */
+          <div
+            className={`absolute bottom-0 left-0 right-0 pointer-events-auto flex flex-col rounded-t-3xl border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 shadow-[0_-8px_32px_rgba(0,0,0,0.10)] dark:shadow-[0_-8px_32px_rgba(0,0,0,0.4)] transition-[height] duration-300 motion-reduce:transition-none ${
+              isExpanded ? 'h-[70vh]' : 'h-[42vh]'
+            }`}
+          >
+            <button
+              className="flex flex-col items-center pt-3 pb-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 rounded-t-3xl"
+              onClick={() => setIsExpanded(e => !e)}
+              aria-label={isExpanded ? 'Contraer' : 'Expandir'}
+            >
+              <span className="w-12 h-1.5 rounded-full bg-gray-300 dark:bg-gray-600" />
+            </button>
+
+            <SidebarContent />
+          </div>
+        )}
+      </div>
     </>
   );
 }
