@@ -45,7 +45,7 @@ function parseRaw(raw: PharmacyRaw): Pharmacy {
 let cache: { data: Pharmacy[]; date: string } | null = null;
 
 function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  return new Date().toLocaleString('sv-SE', { timeZone: 'America/Argentina/Buenos_Aires' }).slice(0, 10);
 }
 
 export async function fetchPharmacies(): Promise<Pharmacy[]> {
