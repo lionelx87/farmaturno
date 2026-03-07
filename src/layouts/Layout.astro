@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import Analytics from '@vercel/analytics/astro';
 
 interface Props {
   title?: string;
@@ -20,6 +21,7 @@ const { title = 'Farmaturno' } = Astro.props;
     <link rel="preconnect" href="https://maps.googleapis.com">
     <link rel="preconnect" href="https://maps.gstatic.com" crossorigin>
     <title>{title}</title>
+    <Analytics />
     <script is:inline>
       const saved = localStorage.getItem('theme');
       const prefersDark = saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
