@@ -323,7 +323,18 @@ export default function PharmacyMap({ pharmacies }: Props) {
                     key={p.name}
                     position={{ lat: p.lat, lng: p.lng }}
                     onClick={() => setSelectedPharmacy(p)}
-                  />
+                  >
+                    <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 shadow-md transition-transform duration-150 ${
+                      selectedPharmacy?.name === p.name
+                        ? 'bg-green-600 border-white scale-125'
+                        : 'bg-white border-green-500'
+                    }`}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill={selectedPharmacy?.name === p.name ? 'white' : '#16a34a'}>
+                        <rect x="10" y="3" width="4" height="18" rx="1.5" />
+                        <rect x="3" y="10" width="18" height="4" rx="1.5" />
+                      </svg>
+                    </div>
+                  </AdvancedMarker>
                 )
               )}
               {userLocation && (
