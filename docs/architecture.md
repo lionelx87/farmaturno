@@ -8,6 +8,17 @@
 | React | 19 | Ecosistema más maduro para Google Maps (`@vis.gl/react-google-maps`) |
 | Tailwind CSS | 4.2 | Utility-first, dark mode class-based nativo, integración Vite sin config file |
 | TypeScript | strict | Default de Astro 5, mejor DX y seguridad de tipos |
+| @astrojs/vercel | 9.x | Adaptador SSR para Vercel. Habilita rendering server-side en cada request con cache en memoria para el fetch diario |
+
+### Modo de output: SSR
+
+El proyecto usa `output: 'server'` (SSR) en lugar de `output: 'static'`.
+
+**Por qué no static:** en modo estático los datos quedan congelados al momento del deploy. Para actualizarlos diariamente habría que configurar un redeploy automático externo.
+
+**Por qué no ISR:** Vercel ISR invalida el cache por tiempo transcurrido (TTL en segundos), no por fecha de Argentina. Con un TTL de 86400s el cache podría expirar a las 23:50, sirviendo datos desactualizados durante casi todo el nuevo día.
+
+**Por qué SSR:** en cada request el servidor evalúa la fecha actual en timezone de Argentina. Si coincide con el cache existente, lo usa. Si cambió (nuevo día), hace un nuevo fetch. Esto garantiza que los datos se renuevan exactamente al cambiar el día en Argentina, sin importar a qué hora llega el primer request.
 
 ---
 
