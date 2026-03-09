@@ -175,7 +175,7 @@ function formatDateParts(dateStr: string): { weekday: string; dayMonth: string }
 
 // ── Shared content ────────────────────────────────────────────────────────────
 
-function SidebarContent() {
+function SidebarContent({ isMinimized = false }: { isMinimized?: boolean }) {
   const {
     pharmaciesForDate,
     selectedDate,
@@ -222,79 +222,86 @@ function SidebarContent() {
         </button>
       </div>
 
-      {/* Date selector */}
-      <div className="flex items-center justify-between px-2 py-3 border-b border-gray-200 dark:border-gray-800">
-        <button
-          onClick={() => navigateDate(-1)}
-          disabled={!canGoPrev}
-          className="p-2 rounded-lg text-gray-400 hover:text-gray-900 dark:text-gray-500 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-25 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500"
-          aria-label="Día anterior"
-        >
-          <ChevronLeft />
-        </button>
-        <div className="text-center">
-          <p className="font-brand font-bold text-[15px] text-gray-900 dark:text-white leading-none">
-            {weekday}
-          </p>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{dayMonth}</p>
-        </div>
-        <button
-          onClick={() => navigateDate(1)}
-          disabled={!canGoNext}
-          className="p-2 rounded-lg text-gray-400 hover:text-gray-900 dark:text-gray-500 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-25 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500"
-          aria-label="Día siguiente"
-        >
-          <ChevronRight />
-        </button>
-      </div>
+      {/* Collapsible: date selector + pharmacy list */}
+      <div className={`flex-1 grid transition-[grid-template-rows] duration-300 motion-reduce:transition-none ${isMinimized ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]'}`}>
+        <div className="overflow-hidden flex flex-col min-h-0">
 
-      {/* Pharmacy list */}
-      <div className="flex-1 overflow-y-auto">
-        {pharmaciesForDate.length === 0 ? (
-          <p className="px-4 py-8 text-sm text-center text-gray-400 dark:text-gray-500">
-            No hay farmacias de turno para este día.
-          </p>
-        ) : (
-          pharmaciesForDate.map(p => {
-            const isSelected = selectedPharmacy?.name === p.name;
-            return (
-              <button
-                key={p.name}
-                onClick={() => onPharmacySelect(p)}
-                className={`w-full flex items-center gap-3 px-3.25 py-3.5 text-left transition-colors border-b border-gray-100 dark:border-gray-800/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-green-500 border-l-[3px] ${
-                  isSelected
-                    ? 'border-l-green-500 bg-green-50/70 dark:bg-green-950/30 hover:bg-green-50 dark:hover:bg-green-950/40'
-                    : 'border-l-transparent hover:bg-gray-50/80 dark:hover:bg-gray-900/60'
-                }`}
-              >
-                <div className="flex-1 min-w-0">
-                  <p className={`font-semibold text-[14px] truncate leading-snug ${
-                    isSelected ? 'text-green-700 dark:text-green-300' : 'text-gray-900 dark:text-white'
-                  }`}>
-                    {p.name}
-                  </p>
-                  <p className="text-[13px] text-gray-400 dark:text-gray-500 truncate mt-0.5">{p.address}</p>
-                  {distances[p.name] && (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-medium text-green-700 dark:text-green-400 mt-1">
-                      <PinIcon />
-                      ~{distances[p.name].label}
-                    </span>
-                  )}
-                </div>
-                {p.phone && (
-                  <a
-                    href={`tel:${p.phone!.replace(/\D/g, '')}`}
-                    onClick={e => e.stopPropagation()}
-                    className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500"
-                    aria-label={`Llamar a ${p.name}`}
+          {/* Date selector */}
+          <div className="flex items-center justify-between px-2 py-3 border-b border-gray-200 dark:border-gray-800">
+            <button
+              onClick={() => navigateDate(-1)}
+              disabled={!canGoPrev}
+              className="p-2 rounded-lg text-gray-400 hover:text-gray-900 dark:text-gray-500 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-25 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500"
+              aria-label="Día anterior"
+            >
+              <ChevronLeft />
+            </button>
+            <div className="text-center">
+              <p className="font-brand font-bold text-[15px] text-gray-900 dark:text-white leading-none">
+                {weekday}
+              </p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{dayMonth}</p>
+            </div>
+            <button
+              onClick={() => navigateDate(1)}
+              disabled={!canGoNext}
+              className="p-2 rounded-lg text-gray-400 hover:text-gray-900 dark:text-gray-500 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-25 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500"
+              aria-label="Día siguiente"
+            >
+              <ChevronRight />
+            </button>
+          </div>
+
+          {/* Pharmacy list */}
+          <div className="flex-1 overflow-y-auto min-h-0">
+            {pharmaciesForDate.length === 0 ? (
+              <p className="px-4 py-8 text-sm text-center text-gray-400 dark:text-gray-500">
+                No hay farmacias de turno para este día.
+              </p>
+            ) : (
+              pharmaciesForDate.map(p => {
+                const isSelected = selectedPharmacy?.name === p.name;
+                return (
+                  <button
+                    key={p.name}
+                    onClick={() => onPharmacySelect(p)}
+                    className={`w-full flex items-center gap-3 px-3.25 py-3.5 text-left transition-colors border-b border-gray-100 dark:border-gray-800/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-green-500 border-l-[3px] ${
+                      isSelected
+                        ? 'border-l-green-500 bg-green-50/70 dark:bg-green-950/30 hover:bg-green-50 dark:hover:bg-green-950/40'
+                        : 'border-l-transparent hover:bg-gray-50/80 dark:hover:bg-gray-900/60'
+                    }`}
                   >
-                    <PhoneIcon size={16} />
-                  </a>
-                )}
-              </button>
-            );
-          })
-        )}
+                    <div className="flex-1 min-w-0">
+                      <p className={`font-semibold text-[14px] truncate leading-snug ${
+                        isSelected ? 'text-green-700 dark:text-green-300' : 'text-gray-900 dark:text-white'
+                      }`}>
+                        {p.name}
+                      </p>
+                      <p className="text-[13px] text-gray-400 dark:text-gray-500 truncate mt-0.5">{p.address}</p>
+                      {distances[p.name] && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-green-700 dark:text-green-400 mt-1">
+                          <PinIcon />
+                          ~{distances[p.name].label}
+                        </span>
+                      )}
+                    </div>
+                    {p.phone && (
+                      <a
+                        href={`tel:${p.phone!.replace(/\D/g, '')}`}
+                        onClick={e => e.stopPropagation()}
+                        className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500"
+                        aria-label={`Llamar a ${p.name}`}
+                      >
+                        <PhoneIcon size={16} />
+                      </a>
+                    )}
+                  </button>
+                );
+              })
+            )}
+          </div>
+
+        </div>
       </div>
 
       {/* Detail card */}
@@ -311,7 +318,7 @@ function SidebarContent() {
 
 export default function Sidebar() {
   const { selectedPharmacy, onPharmacyDeselect, isDark, onToggleTheme } = usePharmacyApp();
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
 
   return (
     <>
@@ -346,21 +353,16 @@ export default function Sidebar() {
             </div>
           </div>
         ) : (
-          /* List mode: expandible */
-          <div
-            className={`absolute bottom-0 left-0 right-0 pointer-events-auto flex flex-col rounded-t-3xl border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 shadow-[0_-8px_32px_rgba(0,0,0,0.10)] dark:shadow-[0_-8px_32px_rgba(0,0,0,0.4)] transition-[height] duration-300 motion-reduce:transition-none ${
-              isExpanded ? 'h-[70vh]' : 'h-[42vh]'
-            }`}
-          >
+          /* List mode: always fully visible, minimizable */
+          <div className="absolute bottom-0 left-0 right-0 pointer-events-auto flex flex-col rounded-t-3xl border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 shadow-[0_-8px_32px_rgba(0,0,0,0.10)] dark:shadow-[0_-8px_32px_rgba(0,0,0,0.4)] h-auto max-h-[80vh] overflow-y-auto">
             <button
-              className="flex flex-col items-center pt-3 pb-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 rounded-t-3xl"
-              onClick={() => setIsExpanded(e => !e)}
-              aria-label={isExpanded ? 'Contraer' : 'Expandir'}
+              className="flex flex-col items-center pt-3 pb-2 w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 rounded-t-3xl"
+              onClick={() => setIsMinimized(m => !m)}
+              aria-label={isMinimized ? 'Expandir' : 'Minimizar'}
             >
               <span className="w-12 h-1.5 rounded-full bg-gray-300 dark:bg-gray-600" />
             </button>
-
-            <SidebarContent />
+            <SidebarContent isMinimized={isMinimized} />
           </div>
         )}
       </div>
