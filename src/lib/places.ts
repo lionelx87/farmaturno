@@ -35,7 +35,7 @@ async function fetchPlaceData(
         'X-Goog-FieldMask': 'places.nationalPhoneNumber,places.location',
       },
       body: JSON.stringify({
-        textQuery: `${name} ${address} Bariloche`,
+        textQuery: `farmacia ${name} ${address} Bariloche`,
         locationBias: {
           circle: {
             center: BARILOCHE_CENTER,
