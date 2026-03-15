@@ -4,6 +4,38 @@ All notable changes to Farmaturno will be documented in this file.
 
 ---
 
+## [1.0.5] - 2026-03-15
+
+### Fixed
+
+- **Google Places search accuracy** improved: the query now includes the "farmacia" prefix to reduce ambiguous results and retrieve more precise phone numbers and coordinates.
+
+---
+
+## [1.0.4] - 2026-03-15
+
+### New Features
+
+- **Estimated closing time** for the active pharmacy shift is now displayed in the sidebar and bottom sheet, calculated from the opening time of the next shift.
+
+---
+
+## [1.0.3] - 2026-03-08
+
+### Improvements
+
+- **Mobile bottom sheet** now supports a collapsible list via the grid trick: the list expands and collapses smoothly without affecting the map layout.
+
+---
+
+## [1.0.1] - 2026-03-07
+
+### Improvements
+
+- **Server-side rendering (SSR)** enabled via the `@astrojs/vercel` adapter, improving initial load time and enabling server-side caching of pharmacy data.
+
+---
+
 ## [1.0.0] - 2026-03-07
 
 First public release. Farmaturno replaces the old duty pharmacy lookup with a modern, mobile-first experience: interactive map, real-time directions, and phone numbers — all in one place.
