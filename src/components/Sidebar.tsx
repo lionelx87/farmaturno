@@ -185,6 +185,7 @@ function SidebarContent({ isMinimized = false }: { isMinimized?: boolean }) {
     canGoNext,
     isDark,
     distances,
+    closingTime,
     onPharmacySelect,
     onDateChange,
     onToggleTheme,
@@ -251,6 +252,15 @@ function SidebarContent({ isMinimized = false }: { isMinimized?: boolean }) {
               <ChevronRight />
             </button>
           </div>
+
+          {/* Closing time */}
+          {closingTime && (
+            <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-800/80 bg-amber-50/60 dark:bg-amber-950/20">
+              <p className="text-[12px] text-amber-700 dark:text-amber-400 font-medium">
+                Turno hasta las {closingTime.time}{closingTime.tomorrow ? ' de mañana' : ''}
+              </p>
+            </div>
+          )}
 
           {/* Pharmacy list */}
           <div className="flex-1 overflow-y-auto min-h-0">

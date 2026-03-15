@@ -1,0 +1,38 @@
+schema: spec-driven
+
+context: |
+  # Farmaturno
+
+  App web que muestra farmacias de turno de Bariloche, Argentina.
+
+  ## Stack
+  - Framework: Astro 5.17 con output SSR (@astrojs/vercel)
+  - UI island: React 19 (@astrojs/react)
+  - Estilos: Tailwind CSS 4.2 (sin config file, dark mode class-based)
+  - Mapas: @vis.gl/react-google-maps
+  - Package manager: pnpm
+  - TypeScript strict
+
+  ## Arquitectura de datos
+  - Un endpoint externo (no controlado) devuelve farmacias en rango ~3 años atrás hasta algunos días adelante
+  - El servidor hace fetch una vez por día y cachea en memoria (cache invalidado al cambiar de día en timezone Argentina)
+  - Todo el filtrado por fecha es client-side, sin llamadas adicionales al servidor
+  - El selector de fechas muestra desde 7 días atrás hasta todas las fechas disponibles en el payload (sin límite superior fijo)
+  - Teléfono y coordenadas vienen de Google Places API, cacheados en localStorage por nombre de farmacia
+
+  ## UI
+  - Layout: sidebar (desktop) / bottom sheet (mobile) + mapa a pantalla completa
+  - Selector de fecha con flechas (sin calendario), rango: 7 días atrás hasta el máximo disponible en los datos
+  - Soporte dark/light mode con toggle en el header
+
+  ## Convenciones
+  - Conventional commits, una sola línea, sin body, sin co-author
+  - Un cambio a la vez, debatir antes de implementar
+  - Variables de entorno: PHARMACIES_ENDPOINT, PUBLIC_GOOGLE_MAPS_API_KEY, PUBLIC_GOOGLE_MAP_ID
+
+rules:
+  proposal:
+    - Plantear opciones antes de decidir, el desarrollador tiene la última palabra
+    - Un cambio a la vez, sin modificaciones masivas en múltiples archivos
+  tasks:
+    - Dividir en pasos atómicos e independientes cuando sea posible

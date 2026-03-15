@@ -27,7 +27,7 @@ El proyecto usa `output: 'server'` (SSR) en lugar de `output: 'static'`.
 ### El endpoint externo
 
 - Existe un único endpoint (no controlado por el equipo) que devuelve un array con todas las farmacias de turno.
-- El rango de datos que devuelve abarca desde aproximadamente 3 años atrás hasta 2 días adelante de la fecha en que se realiza la consulta.
+- El rango de datos que devuelve abarca desde aproximadamente 3 años atrás hasta algunos días adelante de la fecha en que se realiza la consulta.
 - No es posible pedir un subconjunto de fechas: siempre devuelve el rango completo.
 
 ### Fetch diario con caché
@@ -48,7 +48,7 @@ Cuando el usuario selecciona una fecha diferente en la interfaz:
 2. El cliente filtra el array ya disponible en memoria por la fecha seleccionada.
 3. La UI se actualiza de forma instantánea.
 
-Esto es posible porque el payload del endpoint ya contiene el rango de fechas completo que el usuario puede necesitar consultar (hasta 2 días adelante).
+Esto es posible porque el payload del endpoint ya contiene el rango de fechas completo que el usuario puede necesitar consultar.
 
 ---
 
@@ -89,7 +89,7 @@ Pantalla dividida en dos secciones:
 ### Sidebar — contenido (de arriba hacia abajo)
 
 1. **Header**: ícono + nombre de la app, toggle dark/light
-2. **Selector de fecha**: `‹ Lunes 2 de marzo ›` — flechas para avanzar/retroceder un día. Rango: 7 días atrás hasta 2 días adelante. No se implementa calendario (el rango es de ~10 días, las flechas son suficientes).
+2. **Selector de fecha**: `‹ Lunes 2 de marzo ›` — flechas para avanzar/retroceder un día. Rango: 7 días atrás hasta el máximo disponible en los datos del endpoint. No se implementa calendario, las flechas son suficientes.
 3. **Lista de farmacias**: 3 items con nombre, dirección e ícono de teléfono para llamada directa
 4. **Card de detalle**: debajo de la lista, muestra la farmacia seleccionada con nombre, dirección y teléfono
 

@@ -35,6 +35,12 @@ function localYesterday(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+function getClosingTime(hour: number): { time: string; tomorrow: boolean } {
+  if (hour < 9) return { time: '09:00', tomorrow: false };
+  if (hour < 23) return { time: '23:00', tomorrow: false };
+  return { time: '09:00', tomorrow: true };
+}
+
 function getActivePharmacies(pharmacies: Pharmacy[], selectedDate: string, today: string): Pharmacy[] {
   if (selectedDate !== today) return pharmacies.filter(p => p.date === selectedDate);
   const hour = new Date().getHours();
@@ -66,6 +72,7 @@ export interface PharmacyAppContextValue {
   showDirections: boolean;
   canGoPrev: boolean;
   canGoNext: boolean;
+  closingTime: { time: string; tomorrow: boolean } | null;
 
   // State
   selectedDate: string;
@@ -227,12 +234,15 @@ export function PharmacyAppProvider({
     localStorage.setItem('travelMode', mode);
   }, []);
 
+  const closingTime = selectedDate === today ? getClosingTime(new Date().getHours()) : null;
+
   const value: PharmacyAppContextValue = {
     availableDates,
     pharmaciesForDate,
     showDirections: routeOrigin !== null && selectedPharmacy !== null && selectedPharmacy.lat !== 0,
     canGoPrev: currentIndex > 0,
     canGoNext: currentIndex < availableDates.length - 1,
+    closingTime,
     selectedDate,
     selectedPharmacy,
     isDark,
