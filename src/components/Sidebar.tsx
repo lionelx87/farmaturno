@@ -186,6 +186,7 @@ function SidebarContent({ isMinimized = false }: { isMinimized?: boolean }) {
     isDark,
     distances,
     closingTime,
+    isOvernightMix,
     onPharmacySelect,
     onDateChange,
     onToggleTheme,
@@ -269,8 +270,9 @@ function SidebarContent({ isMinimized = false }: { isMinimized?: boolean }) {
                 No hay farmacias de turno para este día.
               </p>
             ) : (
-              pharmaciesForDate.map(p => {
+              pharmaciesForDate.map((p, index) => {
                 const isSelected = selectedPharmacy?.name === p.name;
+                const isDayOnly = isOvernightMix && index >= 2;
                 return (
                   <button
                     key={p.name}
@@ -288,11 +290,20 @@ function SidebarContent({ isMinimized = false }: { isMinimized?: boolean }) {
                         {p.name}
                       </p>
                       <p className="text-[13px] text-gray-400 dark:text-gray-500 truncate mt-0.5">{p.address}</p>
-                      {distances[p.name] && (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-green-700 dark:text-green-400 mt-1">
-                          <PinIcon />
-                          ~{distances[p.name].label}
-                        </span>
+                      {(distances[p.name] || isDayOnly) && (
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          {distances[p.name] && (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-green-700 dark:text-green-400">
+                              <PinIcon />
+                              ~{distances[p.name].label}
+                            </span>
+                          )}
+                          {isDayOnly && (
+                            <span className="text-[11px] font-medium text-amber-600 dark:text-amber-400">
+                              hasta 23:00
+                            </span>
+                          )}
+                        </div>
                       )}
                     </div>
                     {p.phone && (
