@@ -37,7 +37,6 @@ function localYesterday(): string {
 
 function getClosingTime(hour: number): { time: string; tomorrow: boolean } {
   if (hour < 9) return { time: '09:00', tomorrow: false };
-  if (hour < 23) return { time: '23:00', tomorrow: false };
   return { time: '09:00', tomorrow: true };
 }
 
@@ -73,6 +72,7 @@ export interface PharmacyAppContextValue {
   canGoPrev: boolean;
   canGoNext: boolean;
   closingTime: { time: string; tomorrow: boolean } | null;
+  isOvernightMix: boolean;
 
   // State
   selectedDate: string;
@@ -234,7 +234,9 @@ export function PharmacyAppProvider({
     localStorage.setItem('travelMode', mode);
   }, []);
 
-  const closingTime = selectedDate === today ? getClosingTime(new Date().getHours()) : null;
+  const hour = new Date().getHours();
+  const closingTime = selectedDate === today ? getClosingTime(hour) : null;
+  const isOvernightMix = selectedDate === today && hour >= 9 && hour < 23 && pharmaciesForDay.length > 2;
 
   const value: PharmacyAppContextValue = {
     availableDates,
@@ -243,6 +245,7 @@ export function PharmacyAppProvider({
     canGoPrev: currentIndex > 0,
     canGoNext: currentIndex < availableDates.length - 1,
     closingTime,
+    isOvernightMix,
     selectedDate,
     selectedPharmacy,
     isDark,
