@@ -76,10 +76,18 @@ function DirectionsIcon() {
   );
 }
 
+function XIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+    </svg>
+  );
+}
+
 // ── Detail card ───────────────────────────────────────────────────────────────
 
 function PharmacyDetailCard({ pharmacy, layout = 'desktop' }: { pharmacy: PharmacyEnriched; layout?: 'mobile' | 'desktop' }) {
-  const { locationStatus, distances, travelMode, onGetDirections, onTravelModeChange, isOvernightMix, pharmaciesForDate } = usePharmacyApp();
+  const { locationStatus, distances, travelMode, routeOrigin, onGetDirections, onCancelDirections, onTravelModeChange, isOvernightMix, pharmaciesForDate } = usePharmacyApp();
   const distance = distances[pharmacy.name];
   const pharmacyIndex = pharmaciesForDate.findIndex(p => p.name === pharmacy.name);
   const timeLabel = isOvernightMix
@@ -151,14 +159,24 @@ function PharmacyDetailCard({ pharmacy, layout = 'desktop' }: { pharmacy: Pharma
                   <CarIcon />
                 </button>
               </div>
-              <button
-                onClick={onGetDirections}
-                disabled={locationStatus === 'loading'}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 shadow-sm"
-              >
-                <DirectionsIcon />
-                {locationStatus === 'loading' ? 'Obteniendo ubicación…' : 'Cómo llegar'}
-              </button>
+              {routeOrigin !== null ? (
+                <button
+                  onClick={onCancelDirections}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
+                >
+                  <XIcon />
+                  Cancelar recorrido
+                </button>
+              ) : (
+                <button
+                  onClick={onGetDirections}
+                  disabled={locationStatus === 'loading'}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 shadow-sm"
+                >
+                  <DirectionsIcon />
+                  {locationStatus === 'loading' ? 'Obteniendo ubicación…' : 'Cómo llegar'}
+                </button>
+              )}
             </div>
             {locationStatus === 'denied' && (
               <p className="text-xs text-red-500 dark:text-red-400 px-4 pb-3">
@@ -239,14 +257,24 @@ function PharmacyDetailCard({ pharmacy, layout = 'desktop' }: { pharmacy: Pharma
 
       {pharmacy.lat !== 0 && (
         <div className="mt-3 flex flex-col gap-2">
-          <button
-            onClick={onGetDirections}
-            disabled={locationStatus === 'loading'}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 shadow-sm"
-          >
-            <DirectionsIcon />
-            {locationStatus === 'loading' ? 'Obteniendo ubicación…' : 'Cómo llegar'}
-          </button>
+          {routeOrigin !== null ? (
+            <button
+              onClick={onCancelDirections}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
+            >
+              <XIcon />
+              Cancelar recorrido
+            </button>
+          ) : (
+            <button
+              onClick={onGetDirections}
+              disabled={locationStatus === 'loading'}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 shadow-sm"
+            >
+              <DirectionsIcon />
+              {locationStatus === 'loading' ? 'Obteniendo ubicación…' : 'Cómo llegar'}
+            </button>
+          )}
           {locationStatus === 'denied' && (
             <p className="text-xs text-red-500 dark:text-red-400">
               Habilitá la ubicación en la barra del navegador y recargá la página.

@@ -90,6 +90,7 @@ export interface PharmacyAppContextValue {
   onPharmacyDeselect: () => void;
   onToggleTheme: () => void;
   onGetDirections: () => void;
+  onCancelDirections: () => void;
   onTravelModeChange: (mode: TravelMode) => void;
 }
 
@@ -229,6 +230,16 @@ export function PharmacyAppProvider({
     );
   }, []);
 
+  const onCancelDirections = useCallback(() => {
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+    setRouteOrigin(null);
+    setUserLocation(null);
+    setLocationStatus('idle');
+  }, []);
+
   const onTravelModeChange = useCallback((mode: TravelMode) => {
     setTravelMode(mode);
     localStorage.setItem('travelMode', mode);
@@ -259,6 +270,7 @@ export function PharmacyAppProvider({
     onPharmacyDeselect,
     onToggleTheme,
     onGetDirections,
+    onCancelDirections,
     onTravelModeChange,
   };
 
