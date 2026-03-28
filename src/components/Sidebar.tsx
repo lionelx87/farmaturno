@@ -78,7 +78,7 @@ function DirectionsIcon() {
 
 // ── Detail card ───────────────────────────────────────────────────────────────
 
-function PharmacyDetailCard({ pharmacy }: { pharmacy: PharmacyEnriched }) {
+function PharmacyDetailCard({ pharmacy, layout = 'desktop' }: { pharmacy: PharmacyEnriched; layout?: 'mobile' | 'desktop' }) {
   const { locationStatus, distances, travelMode, onGetDirections, onTravelModeChange, isOvernightMix, pharmaciesForDate } = usePharmacyApp();
   const distance = distances[pharmacy.name];
   const pharmacyIndex = pharmaciesForDate.findIndex(p => p.name === pharmacy.name);
@@ -86,6 +86,97 @@ function PharmacyDetailCard({ pharmacy }: { pharmacy: PharmacyEnriched }) {
     ? (pharmacyIndex < 2 ? 'hasta las 09:00 h de mañana' : 'hasta las 23:00 h')
     : null;
 
+  if (layout === 'mobile') {
+    return (
+      <>
+        {/* Zona de datos */}
+        <div className="px-4 pt-4 pb-3">
+          <h2 className="font-semibold text-[15px] text-gray-900 dark:text-white mb-1 leading-snug">
+            {pharmacy.name}
+          </h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 leading-snug mb-2">{pharmacy.address}</p>
+          {(distance || timeLabel) && (
+            <div className="flex flex-col items-start gap-1.5">
+              {distance && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/60 px-2 py-0.5 rounded-full">
+                  <PinIcon />
+                  ~{distance.label}
+                </span>
+              )}
+              {timeLabel && (
+                <span className="inline-flex items-center text-[11px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-full">
+                  {timeLabel}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Fila de teléfono */}
+        {pharmacy.phone && (
+          <a
+            href={`tel:${pharmacy.phone.replace(/\D/g, '')}`}
+            className="flex items-center gap-3 px-4 py-3.5 border-t border-gray-100 dark:border-gray-800 text-sm font-medium text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-950/30 transition-colors"
+          >
+            <PhoneIcon size={16} />
+            {pharmacy.phone}
+          </a>
+        )}
+
+        {/* Fila de navegación */}
+        {pharmacy.lat !== 0 && (
+          <div className="border-t border-gray-100 dark:border-gray-800">
+            <div className="flex items-center gap-2 px-4 py-3">
+              <div className="flex rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 shrink-0">
+                <button
+                  onClick={() => onTravelModeChange('WALKING')}
+                  className={`flex items-center justify-center p-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 ${
+                    travelMode === 'WALKING'
+                      ? 'bg-green-600 text-white'
+                      : 'bg-white dark:bg-gray-900 text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
+                  }`}
+                  aria-label="A pie"
+                >
+                  <WalkIcon />
+                </button>
+                <button
+                  onClick={() => onTravelModeChange('DRIVING')}
+                  className={`flex items-center justify-center p-2 transition-colors border-l border-gray-200 dark:border-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 ${
+                    travelMode === 'DRIVING'
+                      ? 'bg-green-600 text-white'
+                      : 'bg-white dark:bg-gray-900 text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
+                  }`}
+                  aria-label="En auto"
+                >
+                  <CarIcon />
+                </button>
+              </div>
+              <button
+                onClick={onGetDirections}
+                disabled={locationStatus === 'loading'}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 shadow-sm"
+              >
+                <DirectionsIcon />
+                {locationStatus === 'loading' ? 'Obteniendo ubicación…' : 'Cómo llegar'}
+              </button>
+            </div>
+            {locationStatus === 'denied' && (
+              <p className="text-xs text-red-500 dark:text-red-400 px-4 pb-3">
+                Habilitá la ubicación en la barra del navegador y recargá la página.
+              </p>
+            )}
+            {locationStatus === 'unavailable' && (
+              <p className="text-xs text-amber-500 dark:text-amber-400 px-4 pb-3">
+                Tu navegador no soporta geolocalización.
+              </p>
+            )}
+          </div>
+        )}
+      </>
+    );
+  }
+
+  // Layout desktop (sin cambios)
   return (
     <>
       <div className="flex items-start gap-3">
@@ -385,8 +476,8 @@ export default function Sidebar() {
                 {isDark ? <SunIcon /> : <MoonIcon />}
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto p-4">
-              <PharmacyDetailCard pharmacy={selectedPharmacy} />
+            <div className="flex-1 overflow-y-auto">
+              <PharmacyDetailCard pharmacy={selectedPharmacy} layout="mobile" />
             </div>
           </div>
         ) : (
