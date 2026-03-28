@@ -1,4 +1,4 @@
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Mostrar badge de cierre en farmacias durante la ventana mix
 El sistema SHALL mostrar un badge de horario de cierre en **todas** las farmacias activas cuando el usuario está viendo la fecha actual en la ventana 09:00–22:59 y hay más de 2 farmacias activas (`isOvernightMix === true`).
@@ -6,15 +6,17 @@ El sistema SHALL mostrar un badge de horario de cierre en **todas** las farmacia
 - Las farmacias overnight (index 0 y 1) SHALL mostrar el badge "hasta las 09:00 h de mañana".
 - Las farmacias day-only (index >= 2) SHALL mostrar el badge "hasta las 23:00 h".
 
-El badge SHALL presentarse con pill background amber, compacto y a tamaño `text-[11px]`. En la lista, el badge de horario usa `ms-auto` cuando convive con el badge de distancia (empujándolo a la derecha); sin distancia queda alineado a la izquierda. En el detail card, los badges de distancia y horario se muestran apilados verticalmente.
+El badge SHALL ubicarse en el slot derecho (`shrink-0`) de un layout de dos slots fijos. El slot izquierdo (`flex-1`) queda reservado para el badge de distancia cuando esté disponible.
+
+El badge SHALL presentarse con pill background amber, compacto y a tamaño `text-[11px]`.
 
 #### Scenario: Farmacia overnight muestra badge en ventana mix
 - **WHEN** el usuario ve la fecha de hoy, la hora es entre 09:00 y 22:59, hay más de 2 farmacias activas, y la farmacia tiene index 0 o 1
-- **THEN** la farmacia muestra el badge "hasta las 09:00 h de mañana" en su fila del listado
+- **THEN** la farmacia muestra el badge "hasta las 09:00 h de mañana" alineado a la derecha en su fila
 
 #### Scenario: Farmacia day-only muestra badge en ventana mix
 - **WHEN** el usuario ve la fecha de hoy, la hora es entre 09:00 y 22:59, hay más de 2 farmacias activas, y la farmacia tiene index >= 2
-- **THEN** la farmacia muestra el badge "hasta las 23:00 h" en su fila del listado
+- **THEN** la farmacia muestra el badge "hasta las 23:00 h" alineado a la derecha en su fila
 
 #### Scenario: Badge de horario y badge de distancia coexisten en lista
 - **WHEN** la farmacia muestra badge de horario y el usuario tiene ubicación habilitada

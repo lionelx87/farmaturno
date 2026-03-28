@@ -79,8 +79,12 @@ function DirectionsIcon() {
 // ── Detail card ───────────────────────────────────────────────────────────────
 
 function PharmacyDetailCard({ pharmacy }: { pharmacy: PharmacyEnriched }) {
-  const { locationStatus, distances, travelMode, onGetDirections, onTravelModeChange } = usePharmacyApp();
+  const { locationStatus, distances, travelMode, onGetDirections, onTravelModeChange, isOvernightMix, pharmaciesForDate } = usePharmacyApp();
   const distance = distances[pharmacy.name];
+  const pharmacyIndex = pharmaciesForDate.findIndex(p => p.name === pharmacy.name);
+  const timeLabel = isOvernightMix
+    ? (pharmacyIndex < 2 ? 'hasta las 09:00 h de mañana' : 'hasta las 23:00 h')
+    : null;
 
   return (
     <>
@@ -91,9 +95,14 @@ function PharmacyDetailCard({ pharmacy }: { pharmacy: PharmacyEnriched }) {
           </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-2 leading-snug">{pharmacy.address}</p>
           {distance && (
-            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/60 px-2 py-0.5 rounded-full mb-2">
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/60 px-2 py-0.5 rounded-full mb-1.5">
               <PinIcon />
               ~{distance.label}
+            </span>
+          )}
+          {timeLabel && (
+            <span className="inline-flex items-center text-[11px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-full mb-2">
+              {timeLabel}
             </span>
           )}
           {pharmacy.phone && (
@@ -290,17 +299,22 @@ function SidebarContent({ isMinimized = false }: { isMinimized?: boolean }) {
                         {p.name}
                       </p>
                       <p className="text-[13px] text-gray-400 dark:text-gray-500 truncate mt-0.5">{p.address}</p>
-                      {(distances[p.name] || isDayOnly) && (
-                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      {(distances[p.name] || isDayOnly || (isOvernightMix && index < 2)) && (
+                        <div className="flex items-center gap-2 mt-1">
                           {distances[p.name] && (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-green-700 dark:text-green-400">
+                            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/60 px-2 py-0.5 rounded-full">
                               <PinIcon />
                               ~{distances[p.name].label}
                             </span>
                           )}
+                          {isOvernightMix && index < 2 && (
+                            <span className={`text-[11px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-full${distances[p.name] ? ' ms-auto' : ''}`}>
+                              hasta las 09:00 h de mañana
+                            </span>
+                          )}
                           {isDayOnly && (
-                            <span className="text-[11px] font-medium text-amber-600 dark:text-amber-400">
-                              hasta 23:00
+                            <span className={`text-[11px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-full${distances[p.name] ? ' ms-auto' : ''}`}>
+                              hasta las 23:00 h
                             </span>
                           )}
                         </div>

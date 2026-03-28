@@ -36,8 +36,8 @@ function localYesterday(): string {
 }
 
 function getClosingTime(hour: number): { time: string; tomorrow: boolean } {
-  if (hour < 9) return { time: '09:00', tomorrow: false };
-  return { time: '09:00', tomorrow: true };
+  if (hour < 9) return { time: '09:00 h', tomorrow: false };
+  return { time: '09:00 h', tomorrow: true };
 }
 
 function getActivePharmacies(pharmacies: Pharmacy[], selectedDate: string, today: string): Pharmacy[] {
@@ -235,8 +235,8 @@ export function PharmacyAppProvider({
   }, []);
 
   const hour = new Date().getHours();
-  const closingTime = selectedDate === today ? getClosingTime(hour) : null;
   const isOvernightMix = selectedDate === today && hour >= 9 && hour < 23 && pharmaciesForDay.length > 2;
+  const closingTime = selectedDate === today && !isOvernightMix ? getClosingTime(hour) : null;
 
   const value: PharmacyAppContextValue = {
     availableDates,
