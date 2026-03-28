@@ -94,26 +94,28 @@ function PharmacyDetailCard({ pharmacy }: { pharmacy: PharmacyEnriched }) {
             {pharmacy.name}
           </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-2 leading-snug">{pharmacy.address}</p>
-          {distance && (
-            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/60 px-2 py-0.5 rounded-full mb-1.5">
-              <PinIcon />
-              ~{distance.label}
-            </span>
-          )}
-          {timeLabel && (
-            <span className="inline-flex items-center text-[11px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-full mb-2">
-              {timeLabel}
-            </span>
-          )}
-          {pharmacy.phone && (
-            <a
-              href={`tel:${pharmacy.phone.replace(/\D/g, '')}`}
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-green-600 dark:text-green-400 hover:underline"
-            >
-              <PhoneIcon size={14} />
-              {pharmacy.phone}
-            </a>
-          )}
+          <div className="flex flex-col items-start gap-1.5 mb-2">
+            {distance && (
+              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/60 px-2 py-0.5 rounded-full">
+                <PinIcon />
+                ~{distance.label}
+              </span>
+            )}
+            {timeLabel && (
+              <span className="inline-flex items-center text-[11px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-full">
+                {timeLabel}
+              </span>
+            )}
+            {pharmacy.phone && (
+              <a
+                href={`tel:${pharmacy.phone.replace(/\D/g, '')}`}
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-green-600 dark:text-green-400 hover:underline"
+              >
+                <PhoneIcon size={14} />
+                {pharmacy.phone}
+              </a>
+            )}
+          </div>
         </div>
 
         {pharmacy.lat !== 0 && (

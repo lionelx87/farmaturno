@@ -26,7 +26,11 @@ El badge SHALL presentarse con pill background amber, compacto y a tamaño `text
 
 #### Scenario: Badge de horario visible en detail card
 - **WHEN** el usuario selecciona una farmacia durante la ventana mix
-- **THEN** el detail card muestra el badge de horario correspondiente (overnight o day-only) apilado verticalmente junto al badge de distancia si está disponible
+- **THEN** el detail card muestra el badge de horario correspondiente (overnight o day-only) en su propia línea, independientemente de si el badge de distancia o el teléfono están presentes
+
+#### Scenario: Teléfono siempre debajo de los badges en detail card
+- **WHEN** el detail card muestra cualquier combinación de badge de distancia, badge de horario y teléfono
+- **THEN** cada elemento ocupa su propia línea en orden vertical: distancia → horario → teléfono, sin flujo inline entre ellos
 
 #### Scenario: Fuera de la ventana conflictiva no hay badge
 - **WHEN** la hora actual es menor a 09:00 o mayor o igual a 23:00
