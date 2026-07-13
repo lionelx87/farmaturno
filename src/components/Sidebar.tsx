@@ -326,6 +326,58 @@ function LocationRow() {
   );
 }
 
+// ── List pieces ───────────────────────────────────────────────────────────────
+
+function ListSectionHeader({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 bg-amber-50/70 dark:bg-amber-950/30 border-b border-amber-100/70 dark:border-amber-900/30">
+      {children}
+    </p>
+  );
+}
+
+function PharmacyListItem({ pharmacy }: { pharmacy: PharmacyEnriched }) {
+  const { selectedPharmacy, distances, onPharmacySelect } = usePharmacyApp();
+  const isSelected = selectedPharmacy?.name === pharmacy.name;
+  const distance = distances[pharmacy.name];
+
+  return (
+    <button
+      onClick={() => onPharmacySelect(pharmacy)}
+      className={`w-full flex items-center gap-3 px-3.25 py-3.5 text-left transition-colors border-b border-gray-100 dark:border-gray-800/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-green-500 border-l-[3px] ${
+        isSelected
+          ? 'border-l-green-500 bg-green-50/70 dark:bg-green-950/30 hover:bg-green-50 dark:hover:bg-green-950/40'
+          : 'border-l-transparent hover:bg-gray-50/80 dark:hover:bg-gray-900/60'
+      }`}
+    >
+      <div className="flex-1 min-w-0">
+        <p className={`font-semibold text-[14px] truncate leading-snug ${
+          isSelected ? 'text-green-700 dark:text-green-300' : 'text-gray-900 dark:text-white'
+        }`}>
+          {pharmacy.name}
+        </p>
+        <p className="text-[13px] text-gray-400 dark:text-gray-500 truncate mt-0.5">{pharmacy.address}</p>
+        {distance && (
+          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/60 px-2 py-0.5 rounded-full mt-1">
+            <PinIcon />
+            ~{distance.label}
+          </span>
+        )}
+      </div>
+      {pharmacy.phone && (
+        <a
+          href={`tel:${pharmacy.phone.replace(/\D/g, '')}`}
+          onClick={e => e.stopPropagation()}
+          className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500"
+          aria-label={`Llamar a ${pharmacy.name}`}
+        >
+          <PhoneIcon size={16} />
+        </a>
+      )}
+    </button>
+  );
+}
+
 // ── Shared content ────────────────────────────────────────────────────────────
 
 function SidebarContent({ isMinimized = false }: { isMinimized?: boolean }) {
@@ -337,10 +389,8 @@ function SidebarContent({ isMinimized = false }: { isMinimized?: boolean }) {
     canGoPrev,
     canGoNext,
     isDark,
-    distances,
     closingTime,
     isOvernightMix,
-    onPharmacySelect,
     onDateChange,
     onToggleTheme,
   } = usePharmacyApp();
@@ -424,61 +474,19 @@ function SidebarContent({ isMinimized = false }: { isMinimized?: boolean }) {
               <p className="px-4 py-8 text-sm text-center text-gray-400 dark:text-gray-500">
                 No hay farmacias de turno para este día.
               </p>
+            ) : isOvernightMix ? (
+              <>
+                <ListSectionHeader>Toda la noche · hasta las 09:00</ListSectionHeader>
+                {pharmaciesForDate.filter(p => p.shift === 'overnight').map(p => (
+                  <PharmacyListItem key={p.name} pharmacy={p} />
+                ))}
+                <ListSectionHeader>Solo hasta las 23:00</ListSectionHeader>
+                {pharmaciesForDate.filter(p => p.shift === 'day').map(p => (
+                  <PharmacyListItem key={p.name} pharmacy={p} />
+                ))}
+              </>
             ) : (
-              pharmaciesForDate.map(p => {
-                const isSelected = selectedPharmacy?.name === p.name;
-                const isDayOnly = isOvernightMix && p.shift === 'day';
-                return (
-                  <button
-                    key={p.name}
-                    onClick={() => onPharmacySelect(p)}
-                    className={`w-full flex items-center gap-3 px-3.25 py-3.5 text-left transition-colors border-b border-gray-100 dark:border-gray-800/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-green-500 border-l-[3px] ${
-                      isSelected
-                        ? 'border-l-green-500 bg-green-50/70 dark:bg-green-950/30 hover:bg-green-50 dark:hover:bg-green-950/40'
-                        : 'border-l-transparent hover:bg-gray-50/80 dark:hover:bg-gray-900/60'
-                    }`}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className={`font-semibold text-[14px] truncate leading-snug ${
-                        isSelected ? 'text-green-700 dark:text-green-300' : 'text-gray-900 dark:text-white'
-                      }`}>
-                        {p.name}
-                      </p>
-                      <p className="text-[13px] text-gray-400 dark:text-gray-500 truncate mt-0.5">{p.address}</p>
-                      {(distances[p.name] || isDayOnly || (isOvernightMix && p.shift === 'overnight')) && (
-                        <div className="flex items-center gap-2 mt-1">
-                          {distances[p.name] && (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/60 px-2 py-0.5 rounded-full">
-                              <PinIcon />
-                              ~{distances[p.name].label}
-                            </span>
-                          )}
-                          {isOvernightMix && p.shift === 'overnight' && (
-                            <span className={`text-[11px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-full${distances[p.name] ? ' ms-auto' : ''}`}>
-                              hasta las 09:00 h de mañana
-                            </span>
-                          )}
-                          {isDayOnly && (
-                            <span className={`text-[11px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-full${distances[p.name] ? ' ms-auto' : ''}`}>
-                              hasta las 23:00 h
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    {p.phone && (
-                      <a
-                        href={`tel:${p.phone!.replace(/\D/g, '')}`}
-                        onClick={e => e.stopPropagation()}
-                        className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500"
-                        aria-label={`Llamar a ${p.name}`}
-                      >
-                        <PhoneIcon size={16} />
-                      </a>
-                    )}
-                  </button>
-                );
-              })
+              pharmaciesForDate.map(p => <PharmacyListItem key={p.name} pharmacy={p} />)
             )}
           </div>
 
