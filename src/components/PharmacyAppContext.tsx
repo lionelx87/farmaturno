@@ -49,11 +49,12 @@ function getActivePharmacies(pharmacies: Pharmacy[], selectedDate: string, today
 }
 
 function applyCache(pharmacies: Pharmacy[], cache: PlacesCache): PharmacyEnriched[] {
-  return pharmacies.map(p => ({
+  return pharmacies.map((p, index) => ({
     ...p,
     phone: cache[p.name]?.phone ?? null,
     lat: cache[p.name]?.lat ?? 0,
     lng: cache[p.name]?.lng ?? 0,
+    shift: index < 2 ? 'overnight' : 'day',
   }));
 }
 

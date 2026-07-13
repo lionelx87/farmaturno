@@ -87,11 +87,10 @@ function XIcon() {
 // ── Detail card ───────────────────────────────────────────────────────────────
 
 function PharmacyDetailCard({ pharmacy, layout = 'desktop' }: { pharmacy: PharmacyEnriched; layout?: 'mobile' | 'desktop' }) {
-  const { locationStatus, distances, travelMode, routeOrigin, onGetDirections, onCancelDirections, onTravelModeChange, isOvernightMix, pharmaciesForDate } = usePharmacyApp();
+  const { locationStatus, distances, travelMode, routeOrigin, onGetDirections, onCancelDirections, onTravelModeChange, isOvernightMix } = usePharmacyApp();
   const distance = distances[pharmacy.name];
-  const pharmacyIndex = pharmaciesForDate.findIndex(p => p.name === pharmacy.name);
   const timeLabel = isOvernightMix
-    ? (pharmacyIndex < 2 ? 'hasta las 09:00 h de mañana' : 'hasta las 23:00 h')
+    ? (pharmacy.shift === 'overnight' ? 'hasta las 09:00 h de mañana' : 'hasta las 23:00 h')
     : null;
 
   if (layout === 'mobile') {
@@ -400,9 +399,9 @@ function SidebarContent({ isMinimized = false }: { isMinimized?: boolean }) {
                 No hay farmacias de turno para este día.
               </p>
             ) : (
-              pharmaciesForDate.map((p, index) => {
+              pharmaciesForDate.map(p => {
                 const isSelected = selectedPharmacy?.name === p.name;
-                const isDayOnly = isOvernightMix && index >= 2;
+                const isDayOnly = isOvernightMix && p.shift === 'day';
                 return (
                   <button
                     key={p.name}
@@ -420,7 +419,7 @@ function SidebarContent({ isMinimized = false }: { isMinimized?: boolean }) {
                         {p.name}
                       </p>
                       <p className="text-[13px] text-gray-400 dark:text-gray-500 truncate mt-0.5">{p.address}</p>
-                      {(distances[p.name] || isDayOnly || (isOvernightMix && index < 2)) && (
+                      {(distances[p.name] || isDayOnly || (isOvernightMix && p.shift === 'overnight')) && (
                         <div className="flex items-center gap-2 mt-1">
                           {distances[p.name] && (
                             <span className="inline-flex items-center gap-1 text-[11px] font-medium text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/60 px-2 py-0.5 rounded-full">
@@ -428,7 +427,7 @@ function SidebarContent({ isMinimized = false }: { isMinimized?: boolean }) {
                               ~{distances[p.name].label}
                             </span>
                           )}
-                          {isOvernightMix && index < 2 && (
+                          {isOvernightMix && p.shift === 'overnight' && (
                             <span className={`text-[11px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-full${distances[p.name] ? ' ms-auto' : ''}`}>
                               hasta las 09:00 h de mañana
                             </span>
