@@ -89,21 +89,32 @@ Pantalla dividida en dos secciones:
 ### Sidebar — contenido (de arriba hacia abajo)
 
 1. **Header**: ícono + nombre de la app, toggle dark/light
-2. **Selector de fecha**: `‹ Lunes 2 de marzo ›` — flechas para avanzar/retroceder un día. Rango: 7 días atrás hasta el máximo disponible en los datos del endpoint. No se implementa calendario, las flechas son suficientes.
-3. **Lista de farmacias**: 3 items con nombre, dirección e ícono de teléfono para llamada directa
-4. **Card de detalle**: debajo de la lista, muestra la farmacia seleccionada con nombre, dirección y teléfono
+2. **Selector de fecha**: `‹ Lunes 2 de marzo ›` — flechas para avanzar/retroceder un día. Rango: 7 días atrás hasta el máximo disponible en los datos del endpoint. No se implementa calendario, las flechas son suficientes. Cuando la fecha seleccionada no es hoy, aparece un botón «Hoy» para volver. La fecha se sincroniza con la URL (`?fecha=YYYY-MM-DD`, `history.replaceState`) para deep-linking.
+3. **Fila «Usar mi ubicación»**: pide geolocalización sin necesidad de seleccionar farmacia; al concederse se reemplaza por el indicador «Ordenadas por cercanía»
+4. **Lista de farmacias**: ítems con nombre, dirección, chip de distancia (con ubicación concedida) e ícono de teléfono. Cada ítem es un `<div>` con `<button>` de selección y `<a href="tel:">` como hermanos (sin controles anidados). Con ubicación, la lista se ordena por distancia ascendente. Durante el mix nocturno se agrupa bajo encabezados de sección («Toda la noche · hasta las 09:00» / «Solo hasta las 23:00») usando el campo `shift` derivado del índice del payload original.
+5. **Card de detalle**: debajo de la lista, muestra la farmacia seleccionada con nombre, dirección, teléfono y acciones de navegación
+
+### Ubicación y rutas (flujo desacoplado)
+
+- `onRequestLocation()` obtiene la ubicación y calcula distancias (haversine, `lib/distance.ts`) sin trazar rutas.
+- La ruta solo se activa con «Cómo llegar» (`routeActive` explícito); seleccionar farmacia con ubicación ya concedida no dibuja ruta.
+- Al activarse la ruta, `RoutesController` pide a Google Directions **ambos modos** (WALKING y DRIVING) y guarda los resultados en el contexto; alternar modo no emite requests. El selector segmentado muestra la duración de cada modo y el botón «Cancelar recorrido · X» la distancia de la ruta activa.
+- «Cancelar recorrido» limpia solo la ruta: `userLocation`, distancias y orden por cercanía persisten.
+- El re-ruteo por desplazamiento (>50 m vía `watchPosition`) actualiza ambos modos. Las distancias de la lista usan un origen estable (`distanceOrigin`) que no sigue al GPS, para que el orden no cambie durante la navegación.
 
 ### Mapa
 
 - Pins de ubicación por cada farmacia de turno
-- Al seleccionar una farmacia, traza la ruta desde ese pin hasta la ubicación actual del usuario
 - La geolocalización usa `enableHighAccuracy: true` para preferir GPS sobre posicionamiento por red
 
 ### Diseño responsive (mobile)
 
-El Sidebar se convierte en un **bottom sheet** con dos estados:
-- **Peek**: asomando desde abajo, mostrando la lista de farmacias
-- **Expandido**: cubre ~60-70% de la pantalla, incluye también la card de detalle
+El Sidebar se convierte en un **bottom sheet** con tres posiciones de snap:
+- **Mínima** (~148 px): handle + header + selector de fecha
+- **Media** (~45 dvh, posición inicial): mapa y lista conviven
+- **Completa** (~85 dvh)
+
+El arrastre se hace solo desde el handle (pointer events, `touch-action: none`) con snap a la posición más cercana al soltar; un tap en el handle alterna media ↔ completa. Con `prefers-reduced-motion` no hay animación. Con farmacia seleccionada, el sheet pasa al modo card compacto (sin snap).
 
 El mapa permanece visible e interactuable detrás del bottom sheet en todo momento.
 
@@ -111,7 +122,9 @@ El mapa permanece visible e interactuable detrás del bottom sheet en todo momen
 
 Soporte dark/light con toggle en el header del sidebar. Dark mode implementado con clase `dark` en `<html>` y `@custom-variant dark` de Tailwind 4.
 
-El estado `isDark` vive en `PharmacyMap` (ancestro común de `Sidebar` y `Map`) y se pasa como prop a ambos. El mapa usa `colorScheme='DARK'|'LIGHT'` de `@vis.gl/react-google-maps` para sincronizar su apariencia con el tema. Se usa `reuseMaps` para evitar recrear la instancia del mapa al cambiar `colorScheme`.
+El estado `isDark` vive en `PharmacyAppContext` y lo consumen `Sidebar` y `Map`. El mapa usa `colorScheme='DARK'|'LIGHT'` de `@vis.gl/react-google-maps` para sincronizar su apariencia con el tema. Se usa `reuseMaps` para evitar recrear la instancia del mapa al cambiar `colorScheme`.
+
+El tema también se propaga al navegador: `color-scheme` en `<html>` y `<meta name="theme-color">` se actualizan tanto en el script inline de `Layout.astro` (carga inicial) como en el toggle.
 
 ### Variables de entorno requeridas
 
