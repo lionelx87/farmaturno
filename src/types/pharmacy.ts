@@ -26,9 +26,13 @@ export interface PlacesData {
 // localStorage cache keyed by pharmacy name
 export type PlacesCache = Record<string, PlacesData>;
 
+// The first two pharmacies of each day cover the overnight shift (until 09:00 next day)
+export type PharmacyShift = 'overnight' | 'day';
+
 // Pharmacy enriched with Places data — ready for use in the UI island
 export interface PharmacyEnriched extends Pharmacy {
   phone: string | null;
   lat: number;
   lng: number;
+  shift: PharmacyShift;
 }
