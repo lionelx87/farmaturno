@@ -108,7 +108,7 @@ function TravelModeButton({ mode, label, icon, withBorder = false }: {
       onClick={() => onTravelModeChange(mode)}
       aria-pressed={isActive}
       aria-label={label}
-      className={`flex items-center justify-center gap-1.5 px-2.5 py-2 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 ${
+      className={`flex-1 flex items-center justify-center gap-1.5 px-2.5 py-2 text-xs font-semibold whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 ${
         withBorder ? 'border-l border-gray-200 dark:border-gray-700 ' : ''
       }${
         isActive
@@ -122,12 +122,14 @@ function TravelModeButton({ mode, label, icon, withBorder = false }: {
   );
 }
 
-function TravelModeSelector() {
+function TravelModeSelector({ fullWidth = false }: { fullWidth?: boolean }) {
   return (
     <div
       role="group"
       aria-label="Modo de viaje"
-      className="flex rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 shrink-0"
+      className={`flex rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 ${
+        fullWidth ? 'w-full' : 'shrink-0'
+      }`}
     >
       <TravelModeButton mode="WALKING" label="A pie" icon={<WalkIcon />} />
       <TravelModeButton mode="DRIVING" label="En auto" icon={<CarIcon />} withBorder />
@@ -143,17 +145,20 @@ function DirectionsActions() {
 
   return (
     <>
-      <div className="flex items-center gap-2">
-        <TravelModeSelector />
-        {routeOrigin !== null ? (
+      {routeOrigin !== null ? (
+        <div className="flex flex-col gap-2">
+          <TravelModeSelector fullWidth />
           <button
             onClick={onCancelDirections}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 text-sm font-semibold whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
           >
             <XIcon />
             Cancelar recorrido{routeDistance ? ` · ${routeDistance}` : ''}
           </button>
-        ) : (
+        </div>
+      ) : (
+        <div className="flex items-center gap-2">
+          <TravelModeSelector />
           <button
             onClick={onGetDirections}
             disabled={locationStatus === 'loading'}
@@ -162,8 +167,8 @@ function DirectionsActions() {
             <DirectionsIcon />
             {locationStatus === 'loading' ? 'Obteniendo ubicación…' : 'Cómo llegar'}
           </button>
-        )}
-      </div>
+        </div>
+      )}
       <div aria-live="polite">
         {locationStatus === 'denied' && (
           <p className="text-xs text-red-500 dark:text-red-400 mt-2">
