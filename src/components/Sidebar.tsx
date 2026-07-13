@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { usePharmacyApp } from './PharmacyAppContext';
+import type { TravelMode } from './PharmacyAppContext';
 import type { PharmacyEnriched } from '../types/pharmacy';
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
@@ -92,10 +93,95 @@ function XIcon() {
   );
 }
 
+// ── Travel mode selector ──────────────────────────────────────────────────────
+
+function TravelModeButton({ mode, label, icon, withBorder = false }: {
+  mode: TravelMode;
+  label: string;
+  icon: React.ReactNode;
+  withBorder?: boolean;
+}) {
+  const { travelMode, showDirections, routeResults, onTravelModeChange } = usePharmacyApp();
+  const isActive = travelMode === mode;
+  return (
+    <button
+      onClick={() => onTravelModeChange(mode)}
+      aria-pressed={isActive}
+      aria-label={label}
+      className={`flex items-center justify-center gap-1.5 px-2.5 py-2 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 ${
+        withBorder ? 'border-l border-gray-200 dark:border-gray-700 ' : ''
+      }${
+        isActive
+          ? 'bg-green-600 text-white'
+          : 'bg-white dark:bg-gray-900 text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
+      }`}
+    >
+      {icon}
+      {showDirections && <span>{routeResults[mode]?.durationText ?? '…'}</span>}
+    </button>
+  );
+}
+
+function TravelModeSelector() {
+  return (
+    <div
+      role="group"
+      aria-label="Modo de viaje"
+      className="flex rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 shrink-0"
+    >
+      <TravelModeButton mode="WALKING" label="A pie" icon={<WalkIcon />} />
+      <TravelModeButton mode="DRIVING" label="En auto" icon={<CarIcon />} withBorder />
+    </div>
+  );
+}
+
 // ── Detail card ───────────────────────────────────────────────────────────────
 
+function DirectionsActions() {
+  const { locationStatus, travelMode, routeOrigin, routeResults, onGetDirections, onCancelDirections } = usePharmacyApp();
+  const routeDistance = routeResults[travelMode]?.distanceText;
+
+  return (
+    <>
+      <div className="flex items-center gap-2">
+        <TravelModeSelector />
+        {routeOrigin !== null ? (
+          <button
+            onClick={onCancelDirections}
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
+          >
+            <XIcon />
+            Cancelar recorrido{routeDistance ? ` · ${routeDistance}` : ''}
+          </button>
+        ) : (
+          <button
+            onClick={onGetDirections}
+            disabled={locationStatus === 'loading'}
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 shadow-sm"
+          >
+            <DirectionsIcon />
+            {locationStatus === 'loading' ? 'Obteniendo ubicación…' : 'Cómo llegar'}
+          </button>
+        )}
+      </div>
+      <div aria-live="polite">
+        {locationStatus === 'denied' && (
+          <p className="text-xs text-red-500 dark:text-red-400 mt-2">
+            Habilitá la ubicación en la barra del navegador y recargá la página.
+          </p>
+        )}
+        {locationStatus === 'unavailable' && (
+          <p className="text-xs text-amber-500 dark:text-amber-400 mt-2">
+            Tu navegador no soporta geolocalización.
+          </p>
+        )}
+      </div>
+    </>
+  );
+}
+
 function PharmacyDetailCard({ pharmacy, layout = 'desktop' }: { pharmacy: PharmacyEnriched; layout?: 'mobile' | 'desktop' }) {
-  const { locationStatus, distances, travelMode, routeOrigin, onGetDirections, onCancelDirections, onTravelModeChange, isOvernightMix } = usePharmacyApp();
+  const { distances, isOvernightMix } = usePharmacyApp();
   const distance = distances[pharmacy.name];
   const timeLabel = isOvernightMix
     ? (pharmacy.shift === 'overnight' ? 'hasta las 09:00 h de mañana' : 'hasta las 23:00 h')
@@ -140,72 +226,17 @@ function PharmacyDetailCard({ pharmacy, layout = 'desktop' }: { pharmacy: Pharma
 
         {/* Fila de navegación */}
         {pharmacy.lat !== 0 && (
-          <div className="border-t border-gray-100 dark:border-gray-800">
-            <div className="flex items-center gap-2 px-4 py-3">
-              <div className="flex rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 shrink-0">
-                <button
-                  onClick={() => onTravelModeChange('WALKING')}
-                  className={`flex items-center justify-center p-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 ${
-                    travelMode === 'WALKING'
-                      ? 'bg-green-600 text-white'
-                      : 'bg-white dark:bg-gray-900 text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
-                  }`}
-                  aria-label="A pie"
-                >
-                  <WalkIcon />
-                </button>
-                <button
-                  onClick={() => onTravelModeChange('DRIVING')}
-                  className={`flex items-center justify-center p-2 transition-colors border-l border-gray-200 dark:border-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 ${
-                    travelMode === 'DRIVING'
-                      ? 'bg-green-600 text-white'
-                      : 'bg-white dark:bg-gray-900 text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
-                  }`}
-                  aria-label="En auto"
-                >
-                  <CarIcon />
-                </button>
-              </div>
-              {routeOrigin !== null ? (
-                <button
-                  onClick={onCancelDirections}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
-                >
-                  <XIcon />
-                  Cancelar recorrido
-                </button>
-              ) : (
-                <button
-                  onClick={onGetDirections}
-                  disabled={locationStatus === 'loading'}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 shadow-sm"
-                >
-                  <DirectionsIcon />
-                  {locationStatus === 'loading' ? 'Obteniendo ubicación…' : 'Cómo llegar'}
-                </button>
-              )}
-            </div>
-            {locationStatus === 'denied' && (
-              <p className="text-xs text-red-500 dark:text-red-400 px-4 pb-3">
-                Habilitá la ubicación en la barra del navegador y recargá la página.
-              </p>
-            )}
-            {locationStatus === 'unavailable' && (
-              <p className="text-xs text-amber-500 dark:text-amber-400 px-4 pb-3">
-                Tu navegador no soporta geolocalización.
-              </p>
-            )}
+          <div className="border-t border-gray-100 dark:border-gray-800 px-4 py-3">
+            <DirectionsActions />
           </div>
         )}
       </>
     );
   }
 
-  // Layout desktop (sin cambios)
   return (
     <>
-      <div className="flex items-start gap-3">
-        <div className="flex-1 min-w-0">
+      <div className="min-w-0">
           <h2 className="font-semibold text-[15px] text-gray-900 dark:text-white mb-1 leading-snug">
             {pharmacy.name}
           </h2>
@@ -234,64 +265,9 @@ function PharmacyDetailCard({ pharmacy, layout = 'desktop' }: { pharmacy: Pharma
           </div>
         </div>
 
-        {pharmacy.lat !== 0 && (
-          <div className="flex flex-col rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shrink-0">
-            <button
-              onClick={() => onTravelModeChange('WALKING')}
-              className={`flex items-center justify-center p-2.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 ${
-                travelMode === 'WALKING'
-                  ? 'bg-green-600 text-white'
-                  : 'bg-white dark:bg-gray-900 text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
-              }`}
-              aria-label="A pie"
-            >
-              <WalkIcon />
-            </button>
-            <button
-              onClick={() => onTravelModeChange('DRIVING')}
-              className={`flex items-center justify-center p-2.5 transition-colors border-t border-gray-200 dark:border-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 ${
-                travelMode === 'DRIVING'
-                  ? 'bg-green-600 text-white'
-                  : 'bg-white dark:bg-gray-900 text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
-              }`}
-              aria-label="En auto"
-            >
-              <CarIcon />
-            </button>
-          </div>
-        )}
-      </div>
-
       {pharmacy.lat !== 0 && (
-        <div className="mt-3 flex flex-col gap-2">
-          {routeOrigin !== null ? (
-            <button
-              onClick={onCancelDirections}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
-            >
-              <XIcon />
-              Cancelar recorrido
-            </button>
-          ) : (
-            <button
-              onClick={onGetDirections}
-              disabled={locationStatus === 'loading'}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 shadow-sm"
-            >
-              <DirectionsIcon />
-              {locationStatus === 'loading' ? 'Obteniendo ubicación…' : 'Cómo llegar'}
-            </button>
-          )}
-          {locationStatus === 'denied' && (
-            <p className="text-xs text-red-500 dark:text-red-400">
-              Habilitá la ubicación en la barra del navegador y recargá la página.
-            </p>
-          )}
-          {locationStatus === 'unavailable' && (
-            <p className="text-xs text-amber-500 dark:text-amber-400">
-              Tu navegador no soporta geolocalización.
-            </p>
-          )}
+        <div className="mt-3">
+          <DirectionsActions />
         </div>
       )}
     </>

@@ -7,6 +7,14 @@ import type { DistanceResult } from '../lib/distance';
 export type LocationStatus = 'idle' | 'loading' | 'denied' | 'unavailable';
 export type TravelMode = 'DRIVING' | 'WALKING';
 
+export interface RouteInfo {
+  result: google.maps.DirectionsResult;
+  durationText: string;
+  distanceText: string;
+}
+
+export type RouteResults = Partial<Record<TravelMode, RouteInfo>>;
+
 const API_KEY = import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
 const REROUTE_THRESHOLD_METERS = 50;
 
@@ -94,6 +102,7 @@ export interface PharmacyAppContextValue {
   travelMode: TravelMode;
   routeOrigin: google.maps.LatLngLiteral | null;
   userLocation: google.maps.LatLngLiteral | null;
+  routeResults: RouteResults;
 
   // Actions
   onDateChange: (date: string) => void;
@@ -104,6 +113,7 @@ export interface PharmacyAppContextValue {
   onGetDirections: () => void;
   onCancelDirections: () => void;
   onTravelModeChange: (mode: TravelMode) => void;
+  onRouteResult: (mode: TravelMode, info: RouteInfo) => void;
 }
 
 const PharmacyAppContext = createContext<PharmacyAppContextValue | null>(null);
@@ -138,6 +148,7 @@ export function PharmacyAppProvider({
   const [travelMode, setTravelMode] = useState<TravelMode>('DRIVING');
   const [routeActive, setRouteActive] = useState(false);
   const [routeOrigin, setRouteOrigin] = useState<google.maps.LatLngLiteral | null>(null);
+  const [routeResults, setRouteResults] = useState<RouteResults>({});
   const watchIdRef = useRef<number | null>(null);
   const lastRouteOriginRef = useRef<google.maps.LatLngLiteral | null>(null);
 
@@ -166,6 +177,10 @@ export function PharmacyAppProvider({
       )
     ).then(entries => setDistances(Object.fromEntries(entries)));
   }, [distanceOrigin, selectedDate, placesCache]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!routeActive) setRouteResults({});
+  }, [routeActive]);
 
   useEffect(() => {
     if (!routeActive || !selectedPharmacy || !userLocation || !navigator.geolocation) {
@@ -273,6 +288,10 @@ export function PharmacyAppProvider({
     setLocationStatus('idle');
   }, [deactivateRoute]);
 
+  const onRouteResult = useCallback((mode: TravelMode, info: RouteInfo) => {
+    setRouteResults(prev => ({ ...prev, [mode]: info }));
+  }, []);
+
   const onTravelModeChange = useCallback((mode: TravelMode) => {
     setTravelMode(mode);
     localStorage.setItem('travelMode', mode);
@@ -298,6 +317,7 @@ export function PharmacyAppProvider({
     travelMode,
     routeOrigin,
     userLocation,
+    routeResults,
     onDateChange,
     onPharmacySelect,
     onPharmacyDeselect,
@@ -306,6 +326,7 @@ export function PharmacyAppProvider({
     onGetDirections,
     onCancelDirections,
     onTravelModeChange,
+    onRouteResult,
   };
 
   return <PharmacyAppContext value={value}>{children}</PharmacyAppContext>;

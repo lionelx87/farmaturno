@@ -3,6 +3,7 @@ import { APIProvider, Map, AdvancedMarker, useMapsLibrary, useMap } from '@vis.g
 import Sidebar from './Sidebar';
 import { PharmacyAppProvider, usePharmacyApp } from './PharmacyAppContext';
 import type { Pharmacy, PharmacyEnriched } from '../types/pharmacy';
+import type { TravelMode } from './PharmacyAppContext';
 
 // Re-exported for Sidebar until step 3 migrates it to read from context
 export type { LocationStatus, TravelMode } from './PharmacyAppContext';
@@ -12,18 +13,52 @@ const MAP_ID = import.meta.env.PUBLIC_GOOGLE_MAP_ID ?? '';
 const BARILOCHE_CENTER = { lat: -41.1335, lng: -71.3103 };
 const ROUTE_COLOR = '#1a73e8';
 
-// ── DirectionsLayer ───────────────────────────────────────────────────────────
+// ── RoutesController — requests both travel modes, stores results in context ──
 
-interface DirectionsLayerProps {
-  origin: google.maps.LatLngLiteral;
-  destination: google.maps.LatLngLiteral;
-  travelMode: 'DRIVING' | 'WALKING';
+function RoutesController() {
+  const routesLibrary = useMapsLibrary('routes');
+  const { showDirections, routeOrigin, selectedPharmacy, onRouteResult } = usePharmacyApp();
+
+  useEffect(() => {
+    if (!routesLibrary || !showDirections || !routeOrigin || !selectedPharmacy) return;
+    const service = new routesLibrary.DirectionsService();
+    const destination = { lat: selectedPharmacy.lat, lng: selectedPharmacy.lng };
+    let cancelled = false;
+
+    (['WALKING', 'DRIVING'] as const).forEach(mode => {
+      service
+        .route({ origin: routeOrigin, destination, travelMode: routesLibrary.TravelMode[mode] })
+        .then(result => {
+          if (cancelled) return;
+          const leg = result.routes[0]?.legs[0];
+          if (!leg) return;
+          onRouteResult(mode, {
+            result,
+            durationText: leg.duration?.text ?? '',
+            distanceText: leg.distance?.text ?? '',
+          });
+        })
+        .catch(() => {});
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [routesLibrary, showDirections, routeOrigin, selectedPharmacy]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return null;
 }
 
-function DirectionsLayer({ origin, destination, travelMode }: DirectionsLayerProps) {
+// ── DirectionsLayer — renders an in-memory result, no requests of its own ─────
+
+interface DirectionsLayerProps {
+  result: google.maps.DirectionsResult;
+  travelMode: TravelMode;
+}
+
+function DirectionsLayer({ result, travelMode }: DirectionsLayerProps) {
   const map = useMap();
   const routesLibrary = useMapsLibrary('routes');
-  const [directionsService, setDirectionsService] = useState<google.maps.DirectionsService | null>(null);
   const [directionsRenderer, setDirectionsRenderer] = useState<google.maps.DirectionsRenderer | null>(null);
 
   useEffect(() => {
@@ -56,22 +91,13 @@ function DirectionsLayer({ origin, destination, travelMode }: DirectionsLayerPro
       preserveViewport: true,
       polylineOptions,
     });
-    setDirectionsService(new routesLibrary.DirectionsService());
     setDirectionsRenderer(renderer);
     return () => renderer.setMap(null);
-  }, [routesLibrary, map, travelMode]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [routesLibrary, map, travelMode]);
 
   useEffect(() => {
-    if (!directionsService || !directionsRenderer || !routesLibrary) return;
-    const mode =
-      travelMode === 'WALKING'
-        ? routesLibrary.TravelMode.WALKING
-        : routesLibrary.TravelMode.DRIVING;
-    directionsService
-      .route({ origin, destination, travelMode: mode })
-      .then(result => directionsRenderer.setDirections(result))
-      .catch(() => {});
-  }, [directionsService, directionsRenderer, routesLibrary, origin, destination, travelMode]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (directionsRenderer) directionsRenderer.setDirections(result);
+  }, [directionsRenderer, result]);
 
   return null;
 }
@@ -106,10 +132,12 @@ function MapLayout() {
     userLocation,
     isDark,
     showDirections,
-    routeOrigin,
     travelMode,
+    routeResults,
     onPharmacySelect,
   } = usePharmacyApp();
+
+  const activeRoute = routeResults[travelMode];
 
   return (
     <div className="flex h-screen overflow-hidden bg-white dark:bg-gray-950">
@@ -154,12 +182,9 @@ function MapLayout() {
               </AdvancedMarker>
             )}
             <MapCenterer pharmacy={selectedPharmacy} />
-            {showDirections && (
-              <DirectionsLayer
-                origin={routeOrigin!}
-                destination={{ lat: selectedPharmacy!.lat, lng: selectedPharmacy!.lng }}
-                travelMode={travelMode}
-              />
+            <RoutesController />
+            {showDirections && activeRoute && (
+              <DirectionsLayer result={activeRoute.result} travelMode={travelMode} />
             )}
           </Map>
         ) : (
