@@ -89,6 +89,7 @@ export interface PharmacyAppContextValue {
   onPharmacySelect: (pharmacy: PharmacyEnriched) => void;
   onPharmacyDeselect: () => void;
   onToggleTheme: () => void;
+  onRequestLocation: () => void;
   onGetDirections: () => void;
   onCancelDirections: () => void;
   onTravelModeChange: (mode: TravelMode) => void;
@@ -123,6 +124,7 @@ export function PharmacyAppProvider({
   const [locationStatus, setLocationStatus] = useState<LocationStatus>('idle');
   const [distances, setDistances] = useState<Record<string, DistanceResult>>({});
   const [travelMode, setTravelMode] = useState<TravelMode>('DRIVING');
+  const [routeActive, setRouteActive] = useState(false);
   const [routeOrigin, setRouteOrigin] = useState<google.maps.LatLngLiteral | null>(null);
   const watchIdRef = useRef<number | null>(null);
   const lastRouteOriginRef = useRef<google.maps.LatLngLiteral | null>(null);
@@ -153,11 +155,8 @@ export function PharmacyAppProvider({
     ).then(entries => setDistances(Object.fromEntries(entries)));
   }, [userLocation, selectedDate, placesCache]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const hasLocation = userLocation !== null;
-  const hasSelection = selectedPharmacy !== null;
-
   useEffect(() => {
-    if (!hasLocation || !hasSelection || !navigator.geolocation) {
+    if (!routeActive || !selectedPharmacy || !userLocation || !navigator.geolocation) {
       if (watchIdRef.current !== null) {
         navigator.geolocation.clearWatch(watchIdRef.current);
         watchIdRef.current = null;
@@ -165,8 +164,8 @@ export function PharmacyAppProvider({
       return;
     }
 
-    lastRouteOriginRef.current = userLocation!;
-    setRouteOrigin(userLocation!);
+    lastRouteOriginRef.current = userLocation;
+    setRouteOrigin(userLocation);
 
     const id = navigator.geolocation.watchPosition(
       pos => {
@@ -190,20 +189,30 @@ export function PharmacyAppProvider({
       navigator.geolocation.clearWatch(id);
       watchIdRef.current = null;
     };
-  }, [hasLocation, hasSelection, selectedPharmacy]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [routeActive, selectedPharmacy]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const currentIndex = availableDates.indexOf(selectedDate);
+
+  const deactivateRoute = useCallback(() => {
+    setRouteActive(false);
+    setRouteOrigin(null);
+  }, []);
 
   const onDateChange = useCallback((date: string) => {
     setSelectedDate(date);
     setSelectedPharmacy(null);
-  }, []);
+    deactivateRoute();
+  }, [deactivateRoute]);
 
   const onPharmacySelect = useCallback((pharmacy: PharmacyEnriched) => {
     setSelectedPharmacy(pharmacy);
-  }, []);
+    deactivateRoute();
+  }, [deactivateRoute]);
 
-  const onPharmacyDeselect = useCallback(() => setSelectedPharmacy(null), []);
+  const onPharmacyDeselect = useCallback(() => {
+    setSelectedPharmacy(null);
+    deactivateRoute();
+  }, [deactivateRoute]);
 
   const onToggleTheme = useCallback(() => {
     setIsDark(prev => {
@@ -214,7 +223,7 @@ export function PharmacyAppProvider({
     });
   }, []);
 
-  const onGetDirections = useCallback(() => {
+  const acquireLocation = useCallback((activateRoute: boolean) => {
     if (!navigator.geolocation) {
       setLocationStatus('unavailable');
       return;
@@ -224,21 +233,31 @@ export function PharmacyAppProvider({
       pos => {
         setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         setLocationStatus('idle');
+        if (activateRoute) setRouteActive(true);
       },
       err => setLocationStatus(err.code === 1 ? 'denied' : 'unavailable'),
       { enableHighAccuracy: true },
     );
   }, []);
 
+  const onRequestLocation = useCallback(() => acquireLocation(false), [acquireLocation]);
+
+  const onGetDirections = useCallback(() => {
+    if (userLocation) {
+      setRouteActive(true);
+      return;
+    }
+    acquireLocation(true);
+  }, [userLocation, acquireLocation]);
+
   const onCancelDirections = useCallback(() => {
     if (watchIdRef.current !== null) {
       navigator.geolocation.clearWatch(watchIdRef.current);
       watchIdRef.current = null;
     }
-    setRouteOrigin(null);
-    setUserLocation(null);
+    deactivateRoute();
     setLocationStatus('idle');
-  }, []);
+  }, [deactivateRoute]);
 
   const onTravelModeChange = useCallback((mode: TravelMode) => {
     setTravelMode(mode);
@@ -252,7 +271,7 @@ export function PharmacyAppProvider({
   const value: PharmacyAppContextValue = {
     availableDates,
     pharmaciesForDate,
-    showDirections: routeOrigin !== null && selectedPharmacy !== null && selectedPharmacy.lat !== 0,
+    showDirections: routeActive && routeOrigin !== null && selectedPharmacy !== null && selectedPharmacy.lat !== 0,
     canGoPrev: currentIndex > 0,
     canGoNext: currentIndex < availableDates.length - 1,
     closingTime,
@@ -269,6 +288,7 @@ export function PharmacyAppProvider({
     onPharmacySelect,
     onPharmacyDeselect,
     onToggleTheme,
+    onRequestLocation,
     onGetDirections,
     onCancelDirections,
     onTravelModeChange,
