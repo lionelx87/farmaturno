@@ -58,6 +58,16 @@ function applyCache(pharmacies: Pharmacy[], cache: PlacesCache): PharmacyEnriche
   }));
 }
 
+function sortByDistance(
+  pharmacies: PharmacyEnriched[],
+  distances: Record<string, DistanceResult>,
+): PharmacyEnriched[] {
+  if (Object.keys(distances).length === 0) return pharmacies;
+  return [...pharmacies].sort(
+    (a, b) => (distances[a.name]?.meters ?? Infinity) - (distances[b.name]?.meters ?? Infinity)
+  );
+}
+
 function mostRecentAvailable(dates: string[], target: string): string {
   const past = dates.filter(d => d <= target);
   return past.length > 0 ? past[past.length - 1] : (dates[0] ?? target);
@@ -124,6 +134,7 @@ export function PharmacyAppProvider({
   const [userLocation, setUserLocation] = useState<google.maps.LatLngLiteral | null>(null);
   const [locationStatus, setLocationStatus] = useState<LocationStatus>('idle');
   const [distances, setDistances] = useState<Record<string, DistanceResult>>({});
+  const [distanceOrigin, setDistanceOrigin] = useState<google.maps.LatLngLiteral | null>(null);
   const [travelMode, setTravelMode] = useState<TravelMode>('DRIVING');
   const [routeActive, setRouteActive] = useState(false);
   const [routeOrigin, setRouteOrigin] = useState<google.maps.LatLngLiteral | null>(null);
@@ -144,17 +155,17 @@ export function PharmacyAppProvider({
       .then(setPlacesCache);
   }, [selectedDate]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const pharmaciesForDate = applyCache(pharmaciesForDay, placesCache);
+  const pharmaciesForDate = sortByDistance(applyCache(pharmaciesForDay, placesCache), distances);
 
   useEffect(() => {
-    if (!userLocation) return;
-    const located = pharmaciesForDate.filter(p => p.lat !== 0);
+    if (!distanceOrigin) return;
+    const located = applyCache(pharmaciesForDay, placesCache).filter(p => p.lat !== 0);
     Promise.all(
       located.map(p =>
-        getDistance(userLocation, { lat: p.lat, lng: p.lng }).then(r => [p.name, r] as const)
+        getDistance(distanceOrigin, { lat: p.lat, lng: p.lng }).then(r => [p.name, r] as const)
       )
     ).then(entries => setDistances(Object.fromEntries(entries)));
-  }, [userLocation, selectedDate, placesCache]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [distanceOrigin, selectedDate, placesCache]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!routeActive || !selectedPharmacy || !userLocation || !navigator.geolocation) {
@@ -232,7 +243,9 @@ export function PharmacyAppProvider({
     setLocationStatus('loading');
     navigator.geolocation.getCurrentPosition(
       pos => {
-        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        const location = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setUserLocation(location);
+        setDistanceOrigin(location);
         setLocationStatus('idle');
         if (activateRoute) setRouteActive(true);
       },

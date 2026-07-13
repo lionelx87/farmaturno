@@ -52,6 +52,14 @@ function PinIcon() {
   );
 }
 
+function LocateIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm9 3h-1.07A8.006 8.006 0 0 0 13 4.07V3a1 1 0 1 0-2 0v1.07A8.006 8.006 0 0 0 4.07 11H3a1 1 0 1 0 0 2h1.07A8.006 8.006 0 0 0 11 19.93V21a1 1 0 1 0 2 0v-1.07A8.006 8.006 0 0 0 19.93 13H21a1 1 0 1 0 0-2zm-9 7a6 6 0 1 1 0-12 6 6 0 0 1 0 12z" />
+    </svg>
+  );
+}
+
 function WalkIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -302,6 +310,46 @@ function formatDateParts(dateStr: string): { weekday: string; dayMonth: string }
   };
 }
 
+// ── Location row ──────────────────────────────────────────────────────────────
+
+function LocationRow() {
+  const { userLocation, locationStatus, onRequestLocation } = usePharmacyApp();
+
+  if (userLocation) {
+    return (
+      <p className="flex items-center gap-1.5 px-4 py-2 text-[11px] font-semibold text-green-700 dark:text-green-400 bg-green-50/70 dark:bg-green-950/30 border-b border-green-100 dark:border-green-900/40">
+        <PinIcon />
+        Ordenadas por cercanía
+      </p>
+    );
+  }
+
+  return (
+    <div className="border-b border-gray-100 dark:border-gray-800/80">
+      <button
+        onClick={onRequestLocation}
+        disabled={locationStatus === 'loading'}
+        className="w-full flex items-center gap-2.5 px-4 py-3 text-[13px] font-semibold text-green-700 dark:text-green-400 hover:bg-green-50/70 dark:hover:bg-green-950/30 disabled:opacity-60 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-green-500"
+      >
+        <LocateIcon />
+        {locationStatus === 'loading' ? 'Obteniendo ubicación…' : 'Usar mi ubicación'}
+      </button>
+      <div aria-live="polite">
+        {locationStatus === 'denied' && (
+          <p className="text-xs text-red-500 dark:text-red-400 px-4 pb-2.5">
+            Habilitá la ubicación en la barra del navegador y recargá la página.
+          </p>
+        )}
+        {locationStatus === 'unavailable' && (
+          <p className="text-xs text-amber-500 dark:text-amber-400 px-4 pb-2.5">
+            Tu navegador no soporta geolocalización.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Shared content ────────────────────────────────────────────────────────────
 
 function SidebarContent({ isMinimized = false }: { isMinimized?: boolean }) {
@@ -391,6 +439,8 @@ function SidebarContent({ isMinimized = false }: { isMinimized?: boolean }) {
               </p>
             </div>
           )}
+
+          <LocationRow />
 
           {/* Pharmacy list */}
           <div className="flex-1 overflow-y-auto min-h-0">
