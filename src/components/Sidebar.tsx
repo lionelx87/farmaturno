@@ -391,12 +391,14 @@ function SidebarContent() {
     isDark,
     closingTime,
     isOvernightMix,
+    today,
     onDateChange,
     onToggleTheme,
   } = usePharmacyApp();
 
   const { weekday, dayMonth } = formatDateParts(selectedDate);
   const currentIndex = availableDates.indexOf(selectedDate);
+  const showToday = selectedDate !== today && availableDates.includes(today);
 
   function navigateDate(direction: -1 | 1) {
     const next = availableDates[currentIndex + direction];
@@ -440,11 +442,21 @@ function SidebarContent() {
             >
               <ChevronLeft />
             </button>
-            <div className="text-center">
-              <p className="font-brand font-bold text-[15px] text-gray-900 dark:text-white leading-none">
-                {weekday}
-              </p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{dayMonth}</p>
+            <div className="flex items-center gap-2">
+              <div className="text-center">
+                <p className="font-brand font-bold text-[15px] text-gray-900 dark:text-white leading-none">
+                  {weekday}
+                </p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{dayMonth}</p>
+              </div>
+              {showToday && (
+                <button
+                  onClick={() => onDateChange(today)}
+                  className="text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full bg-green-50 dark:bg-green-950/60 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500"
+                >
+                  Hoy
+                </button>
+              )}
             </div>
             <button
               onClick={() => navigateDate(1)}

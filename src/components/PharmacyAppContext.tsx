@@ -92,6 +92,7 @@ export interface PharmacyAppContextValue {
   canGoNext: boolean;
   closingTime: { time: string; tomorrow: boolean } | null;
   isOvernightMix: boolean;
+  today: string;
 
   // State
   selectedDate: string;
@@ -156,7 +157,9 @@ export function PharmacyAppProvider({
     setIsDark(document.documentElement.classList.contains('dark'));
     const saved = localStorage.getItem('travelMode') as TravelMode | null;
     if (saved) setTravelMode(saved);
-  }, []);
+    const dateParam = new URLSearchParams(window.location.search).get('fecha');
+    if (dateParam && availableDates.includes(dateParam)) setSelectedDate(dateParam);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const pharmaciesForDay = getActivePharmacies(pharmacies, selectedDate, today);
 
@@ -229,6 +232,9 @@ export function PharmacyAppProvider({
     setSelectedDate(date);
     setSelectedPharmacy(null);
     deactivateRoute();
+    const url = new URL(window.location.href);
+    url.searchParams.set('fecha', date);
+    history.replaceState(null, '', url);
   }, [deactivateRoute]);
 
   const onPharmacySelect = useCallback((pharmacy: PharmacyEnriched) => {
@@ -309,6 +315,7 @@ export function PharmacyAppProvider({
     canGoNext: currentIndex < availableDates.length - 1,
     closingTime,
     isOvernightMix,
+    today,
     selectedDate,
     selectedPharmacy,
     isDark,
