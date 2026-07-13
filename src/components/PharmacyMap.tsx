@@ -168,7 +168,7 @@ function MapLayout() {
                       ? 'bg-green-600 border-white scale-125'
                       : 'bg-white border-green-500'
                   }`}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill={selectedPharmacy?.name === p.name ? 'white' : '#16a34a'}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill={selectedPharmacy?.name === p.name ? 'white' : '#16a34a'} aria-hidden="true">
                       <rect x="10" y="3" width="4" height="18" rx="1.5" />
                       <rect x="3" y="10" width="18" height="4" rx="1.5" />
                     </svg>

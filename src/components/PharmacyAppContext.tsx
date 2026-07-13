@@ -251,6 +251,8 @@ export function PharmacyAppProvider({
     setIsDark(prev => {
       const next = !prev;
       document.documentElement.classList.toggle('dark', next);
+      document.documentElement.style.colorScheme = next ? 'dark' : 'light';
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', next ? '#030712' : '#ffffff');
       localStorage.setItem('theme', next ? 'dark' : 'light');
       return next;
     });
