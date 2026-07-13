@@ -37,7 +37,7 @@
 - [x] 6.1 Implementar snap points mínima (~140 px) / media (~45 dvh, default) / completa (~85 dvh) en el sheet de modo lista
 - [x] 6.2 Implementar drag desde el handle con pointer events (`touch-action: none`), snap al soltar con transición y variante sin animación para `prefers-reduced-motion`
 - [x] 6.3 Tap en el handle alterna media ↔ completa; en posición mínima quedan visibles handle y selector de fecha
-- [ ] 6.4 Verificar en mobile real/emulado: scroll interno de la lista no mueve el sheet, modo card sin cambios
+- [x] 6.4 Verificar en mobile real/emulado: scroll interno de la lista no mueve el sheet, modo card sin cambios
 
 ## 7. Fecha en URL y botón «Hoy»
 
@@ -53,7 +53,7 @@
 - [x] 8.3 Envolver los mensajes de estado de ubicación en región `aria-live="polite"`
 - [x] 8.4 Agregar `aria-hidden="true"` a los SVG decorativos de `Sidebar.tsx` y `PharmacyMap.tsx`
 - [x] 8.5 Agregar `color-scheme` y `<meta name="theme-color">` en `Layout.astro`, sincronizados con el toggle de tema
-- [ ] 8.6 Verificar con teclado y lector de pantalla: foco independiente en botón/teléfono, modo activo anunciado
+- [x] 8.6 Verificar con teclado y lector de pantalla: foco independiente en botón/teléfono, modo activo anunciado
 
 ## 9. Documentación
 
