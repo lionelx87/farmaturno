@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { usePharmacyApp } from './PharmacyAppContext';
 import type { TravelMode } from './PharmacyAppContext';
 import type { PharmacyEnriched } from '../types/pharmacy';
@@ -380,7 +380,7 @@ function PharmacyListItem({ pharmacy }: { pharmacy: PharmacyEnriched }) {
 
 // ── Shared content ────────────────────────────────────────────────────────────
 
-function SidebarContent({ isMinimized = false }: { isMinimized?: boolean }) {
+function SidebarContent() {
   const {
     pharmaciesForDate,
     selectedDate,
@@ -427,9 +427,8 @@ function SidebarContent({ isMinimized = false }: { isMinimized?: boolean }) {
         </button>
       </div>
 
-      {/* Collapsible: date selector + pharmacy list */}
-      <div className={`flex-1 grid transition-[grid-template-rows] duration-300 motion-reduce:transition-none ${isMinimized ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]'}`}>
-        <div className="overflow-hidden flex flex-col min-h-0">
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        <div className="flex flex-col min-h-0 flex-1">
 
           {/* Date selector */}
           <div className="flex items-center justify-between px-2 py-3 border-b border-gray-200 dark:border-gray-800">
@@ -469,7 +468,7 @@ function SidebarContent({ isMinimized = false }: { isMinimized?: boolean }) {
           <LocationRow />
 
           {/* Pharmacy list */}
-          <div className="flex-1 overflow-y-auto min-h-0">
+          <div className="flex-1 overflow-y-auto overscroll-contain min-h-0">
             {pharmaciesForDate.length === 0 ? (
               <p className="px-4 py-8 text-sm text-center text-gray-400 dark:text-gray-500">
                 No hay farmacias de turno para este día.
@@ -503,11 +502,71 @@ function SidebarContent({ isMinimized = false }: { isMinimized?: boolean }) {
   );
 }
 
+// ── Bottom sheet ──────────────────────────────────────────────────────────────
+
+type SheetPosition = 'min' | 'mid' | 'full';
+
+const SHEET_MIN_HEIGHT = 148;
+
+const SHEET_HEIGHT_CSS: Record<SheetPosition, string> = {
+  min: `${SHEET_MIN_HEIGHT}px`,
+  mid: '45dvh',
+  full: '85dvh',
+};
+
+function sheetSnapHeights(): Record<SheetPosition, number> {
+  const viewport = window.innerHeight;
+  return { min: SHEET_MIN_HEIGHT, mid: viewport * 0.45, full: viewport * 0.85 };
+}
+
 // ── Sidebar ───────────────────────────────────────────────────────────────────
 
 export default function Sidebar() {
   const { selectedPharmacy, onPharmacyDeselect, isDark, onToggleTheme } = usePharmacyApp();
-  const [isMinimized, setIsMinimized] = useState(false);
+  const [sheetPosition, setSheetPosition] = useState<SheetPosition>('mid');
+  const [dragHeight, setDragHeight] = useState<number | null>(null);
+  const dragRef = useRef<{ startY: number; startHeight: number; moved: boolean } | null>(null);
+
+  function toggleSheet() {
+    setSheetPosition(pos => (pos === 'full' ? 'mid' : 'full'));
+  }
+
+  function onHandlePointerDown(e: React.PointerEvent<HTMLButtonElement>) {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    dragRef.current = { startY: e.clientY, startHeight: sheetSnapHeights()[sheetPosition], moved: false };
+  }
+
+  function onHandlePointerMove(e: React.PointerEvent<HTMLButtonElement>) {
+    const drag = dragRef.current;
+    if (!drag) return;
+    const delta = drag.startY - e.clientY;
+    if (Math.abs(delta) > 6) drag.moved = true;
+    if (!drag.moved) return;
+    const { min, full } = sheetSnapHeights();
+    setDragHeight(Math.min(Math.max(drag.startHeight + delta, min), full));
+  }
+
+  function onHandlePointerUp(e: React.PointerEvent<HTMLButtonElement>) {
+    const drag = dragRef.current;
+    if (!drag) return;
+    dragRef.current = null;
+    setDragHeight(null);
+    if (!drag.moved) {
+      toggleSheet();
+      return;
+    }
+    const snaps = sheetSnapHeights();
+    const height = drag.startHeight + (drag.startY - e.clientY);
+    const nearest = (Object.keys(snaps) as SheetPosition[]).reduce((best, pos) =>
+      Math.abs(snaps[pos] - height) < Math.abs(snaps[best] - height) ? pos : best
+    );
+    setSheetPosition(nearest);
+  }
+
+  function onHandlePointerCancel() {
+    dragRef.current = null;
+    setDragHeight(null);
+  }
 
   return (
     <>
@@ -542,16 +601,27 @@ export default function Sidebar() {
             </div>
           </div>
         ) : (
-          /* List mode: always fully visible, minimizable */
-          <div className="absolute bottom-0 left-0 right-0 pointer-events-auto flex flex-col rounded-t-3xl border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 shadow-[0_-8px_32px_rgba(0,0,0,0.10)] dark:shadow-[0_-8px_32px_rgba(0,0,0,0.4)] h-auto max-h-[80vh] overflow-y-auto">
+          /* List mode: draggable sheet with min / mid / full snap positions */
+          <div
+            className={`absolute bottom-0 left-0 right-0 pointer-events-auto flex flex-col rounded-t-3xl border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 shadow-[0_-8px_32px_rgba(0,0,0,0.10)] dark:shadow-[0_-8px_32px_rgba(0,0,0,0.4)] overflow-hidden ${
+              dragHeight === null ? 'transition-[height] duration-300 motion-reduce:transition-none' : ''
+            }`}
+            style={{ height: dragHeight !== null ? `${dragHeight}px` : SHEET_HEIGHT_CSS[sheetPosition] }}
+          >
             <button
-              className="flex flex-col items-center pt-3 pb-2 w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 rounded-t-3xl"
-              onClick={() => setIsMinimized(m => !m)}
-              aria-label={isMinimized ? 'Expandir' : 'Minimizar'}
+              className="flex flex-col items-center pt-3 pb-2 w-full shrink-0 touch-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 rounded-t-3xl"
+              onPointerDown={onHandlePointerDown}
+              onPointerMove={onHandlePointerMove}
+              onPointerUp={onHandlePointerUp}
+              onPointerCancel={onHandlePointerCancel}
+              onClick={e => {
+                if (e.detail === 0) toggleSheet();
+              }}
+              aria-label="Ajustar altura de la lista"
             >
               <span className="w-12 h-1.5 rounded-full bg-gray-300 dark:bg-gray-600" />
             </button>
-            <SidebarContent isMinimized={isMinimized} />
+            <SidebarContent />
           </div>
         )}
       </div>
