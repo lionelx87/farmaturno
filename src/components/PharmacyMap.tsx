@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { APIProvider, Map, AdvancedMarker, useMapsLibrary, useMap } from '@vis.gl/react-google-maps';
+import { APIProvider, Map, AdvancedMarker, RenderingType, useMapsLibrary, useMap } from '@vis.gl/react-google-maps';
 import Sidebar from './Sidebar';
 import SimulationPanel from './SimulationPanel';
 import { simulation } from '../lib/geolocation';
@@ -262,6 +262,16 @@ function NavigationBanner() {
   );
 }
 
+// ── DebugMapHandle — dev-only escape hatch for runtime inspection ─────────────
+
+function DebugMapHandle() {
+  const map = useMap();
+  useEffect(() => {
+    if (import.meta.env.DEV && map) (window as unknown as { __map: google.maps.Map }).__map = map;
+  }, [map]);
+  return null;
+}
+
 // ── MapCenterer ───────────────────────────────────────────────────────────────
 
 function MapCenterer({ pharmacy }: { pharmacy: PharmacyEnriched | null }) {
@@ -338,6 +348,7 @@ function MapLayout() {
             defaultCenter={BARILOCHE_CENTER}
             defaultZoom={13}
             mapId={MAP_ID}
+            renderingType={RenderingType.VECTOR}
             colorScheme={isDark ? 'DARK' : 'LIGHT'}
             gestureHandling="greedy"
             headingInteractionEnabled
@@ -383,6 +394,7 @@ function MapLayout() {
             <MapCenterer pharmacy={selectedPharmacy} />
             <NavigationCamera suspended={cameraSuspended} onUserGesture={suspendCamera} />
             <ArrivalCamera />
+            {import.meta.env.DEV && <DebugMapHandle />}
             <RoutesController />
             {showDirections && activeRoute && (
               <DirectionsLayer result={activeRoute.result} travelMode={travelMode} />
