@@ -93,6 +93,15 @@ function XIcon() {
   );
 }
 
+function SpinnerIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="motion-safe:animate-spin" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="3" opacity="0.25" />
+      <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 // ── Travel mode selector ──────────────────────────────────────────────────────
 
 function TravelModeButton({ mode, label, icon, withBorder = false }: {
@@ -139,8 +148,16 @@ function TravelModeSelector({ fullWidth = false }: { fullWidth?: boolean }) {
 
 // ── Detail card ───────────────────────────────────────────────────────────────
 
+function NavigationIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z" />
+    </svg>
+  );
+}
+
 function DirectionsActions() {
-  const { locationStatus, travelMode, routeOrigin, routeResults, onGetDirections, onCancelDirections } = usePharmacyApp();
+  const { locationStatus, travelMode, routeOrigin, routeResults, onGetDirections, onCancelDirections, onStartNavigation } = usePharmacyApp();
   const routeDistance = routeResults[travelMode]?.distanceText;
 
   return (
@@ -148,6 +165,13 @@ function DirectionsActions() {
       {routeOrigin !== null ? (
         <div className="flex flex-col gap-2">
           <TravelModeSelector fullWidth />
+          <button
+            onClick={onStartNavigation}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-green-600 hover:bg-green-700 active:bg-green-800 text-white text-sm font-semibold whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 shadow-sm"
+          >
+            <NavigationIcon />
+            Iniciar navegación
+          </button>
           <button
             onClick={onCancelDirections}
             className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 text-sm font-semibold whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
@@ -162,10 +186,10 @@ function DirectionsActions() {
           <button
             onClick={onGetDirections}
             disabled={locationStatus === 'loading'}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 shadow-sm"
+            className="flex-1 min-w-0 flex items-center justify-center gap-2 px-4 py-2 min-h-9 rounded-xl bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 shadow-sm"
           >
-            <DirectionsIcon />
-            {locationStatus === 'loading' ? 'Obteniendo ubicación…' : 'Cómo llegar'}
+            {locationStatus === 'loading' ? <SpinnerIcon /> : <DirectionsIcon />}
+            {locationStatus === 'loading' ? 'Ubicando…' : 'Cómo llegar'}
           </button>
         </div>
       )}
@@ -399,7 +423,8 @@ function SidebarContent() {
 
   const { weekday, dayMonth } = formatDateParts(selectedDate);
   const currentIndex = availableDates.indexOf(selectedDate);
-  const showToday = selectedDate !== today && availableDates.includes(today);
+  const isToday = selectedDate === today;
+  const showGoToToday = !isToday && availableDates.includes(today);
 
   function navigateDate(direction: -1 | 1) {
     const next = availableDates[currentIndex + direction];
@@ -449,12 +474,17 @@ function SidebarContent() {
               </p>
               <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{dayMonth}</p>
             </div>
-            {showToday && (
+            {isToday && (
+              <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full bg-green-50 dark:bg-green-950/60 text-green-700 dark:text-green-400">
+                Hoy
+              </span>
+            )}
+            {showGoToToday && (
               <button
                 onClick={() => onDateChange(today)}
-                className="text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full bg-green-50 dark:bg-green-950/60 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500"
+                className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full border border-green-300 dark:border-green-800 text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-950/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500"
               >
-                Hoy
+                Ir a hoy
               </button>
             )}
           </div>
@@ -533,7 +563,7 @@ function sheetSnapHeights(): Record<SheetPosition, number> {
 // ── Sidebar ───────────────────────────────────────────────────────────────────
 
 export default function Sidebar() {
-  const { selectedPharmacy, onPharmacyDeselect, isDark, onToggleTheme } = usePharmacyApp();
+  const { selectedPharmacy, onPharmacyDeselect, isDark, onToggleTheme, navigationMode } = usePharmacyApp();
   const [sheetPosition, setSheetPosition] = useState<SheetPosition>('mid');
   const [dragHeight, setDragHeight] = useState<number | null>(null);
   const dragRef = useRef<{ startY: number; startHeight: number; moved: boolean } | null>(null);
@@ -582,13 +612,13 @@ export default function Sidebar() {
   return (
     <>
       {/* ── DESKTOP sidebar ── */}
-      <aside className="hidden md:flex w-80 shrink-0 flex-col h-full border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950">
+      <aside className={`${navigationMode ? 'hidden' : 'hidden md:flex'} w-80 shrink-0 flex-col h-full border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950`}>
         <SidebarContent />
       </aside>
 
       {/* ── MOBILE bottom sheet ── */}
       <div className="md:hidden fixed inset-0 pointer-events-none z-20">
-        {selectedPharmacy ? (
+        {navigationMode ? null : selectedPharmacy ? (
           /* Card mode: compact sheet */
           <div className="absolute bottom-0 left-0 right-0 pointer-events-auto flex flex-col rounded-t-3xl border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 shadow-[0_-8px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_-8px_32px_rgba(0,0,0,0.4)] h-auto max-h-[55vh] overflow-y-auto">
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800">

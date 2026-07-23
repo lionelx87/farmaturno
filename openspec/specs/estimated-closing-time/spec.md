@@ -1,3 +1,7 @@
+# estimated-closing-time Specification
+
+## Purpose
+TBD - created by archiving change add-estimated-closing-time. Update Purpose after archive.
 ## Requirements
 
 ### Requirement: Mostrar horario estimado de cierre del turno activo

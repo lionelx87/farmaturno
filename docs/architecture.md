@@ -89,7 +89,7 @@ Pantalla dividida en dos secciones:
 ### Sidebar — contenido (de arriba hacia abajo)
 
 1. **Header**: ícono + nombre de la app, toggle dark/light
-2. **Selector de fecha**: `‹ Lunes 2 de marzo ›` — flechas para avanzar/retroceder un día. Rango: 7 días atrás hasta el máximo disponible en los datos del endpoint. No se implementa calendario, las flechas son suficientes. Cuando la fecha seleccionada no es hoy, aparece un botón «Hoy» para volver. La fecha se sincroniza con la URL (`?fecha=YYYY-MM-DD`, `history.replaceState`) para deep-linking.
+2. **Selector de fecha**: `‹ Lunes 2 de marzo ›` — flechas para avanzar/retroceder un día. Rango: 7 días atrás hasta el máximo disponible en los datos del endpoint. No se implementa calendario, las flechas son suficientes. Cuando la fecha seleccionada **es hoy**, la acompaña una etiqueta no interactiva «Hoy»; cuando no lo es, aparece la acción «Ir a hoy» (estilo botón) para volver — etiqueta y atajo son elementos distintos para evitar leer «Hoy» junto a una fecha que no es la actual. Toda derivación de fechas de calendario se calcula en hora local, sin representaciones UTC. La fecha se sincroniza con la URL (`?fecha=YYYY-MM-DD`, `history.replaceState`) para deep-linking.
 3. **Fila «Usar mi ubicación»**: pide geolocalización sin necesidad de seleccionar farmacia; al concederse se reemplaza por el indicador «Ordenadas por cercanía»
 4. **Lista de farmacias**: ítems con nombre, dirección, chip de distancia (con ubicación concedida) e ícono de teléfono. Cada ítem es un `<div>` con `<button>` de selección y `<a href="tel:">` como hermanos (sin controles anidados). Con ubicación, la lista se ordena por distancia ascendente. Durante el mix nocturno se agrupa bajo encabezados de sección («Toda la noche · hasta las 09:00» / «Solo hasta las 23:00») usando el campo `shift` derivado del índice del payload original.
 5. **Card de detalle**: debajo de la lista, muestra la farmacia seleccionada con nombre, dirección, teléfono y acciones de navegación
@@ -100,7 +100,35 @@ Pantalla dividida en dos secciones:
 - La ruta solo se activa con «Cómo llegar» (`routeActive` explícito); seleccionar farmacia con ubicación ya concedida no dibuja ruta.
 - Al activarse la ruta, `RoutesController` pide a Google Directions **ambos modos** (WALKING y DRIVING) y guarda los resultados en el contexto; alternar modo no emite requests. El selector segmentado muestra la duración de cada modo y el botón «Cancelar recorrido · X» la distancia de la ruta activa.
 - «Cancelar recorrido» limpia solo la ruta: `userLocation`, distancias y orden por cercanía persisten.
-- El re-ruteo por desplazamiento (>50 m vía `watchPosition`) actualiza ambos modos. Las distancias de la lista usan un origen estable (`distanceOrigin`) que no sigue al GPS, para que el orden no cambie durante la navegación.
+- El re-ruteo por desplazamiento (>50 m vía `watchPosition`) actualiza ambos modos. Con recorrido activo, los **chips de distancia se actualizan en vivo** cuando el usuario se aleja >25 m del último origen de cálculo (`distanceOrigin`), pero el **orden de la lista queda congelado** al iniciar el recorrido (ref con el orden vigente) para evitar saltos de UI en movimiento.
+- La ruta DRIVING se dibuja con `strokeOpacity: 0.7` para que los nombres de calles del mapa base sigan legibles a través de la línea (en mapas vectoriales la polilínea se renderiza por encima de las etiquetas).
+
+### Snap a la ruta
+
+Durante un recorrido activo, cada posición GPS se proyecta sobre la polilínea de la ruta (`lib/route-geometry.ts`, proyección equirectangular por segmento). Si el desvío perpendicular es <30 m, el marcador de usuario se renderiza en el punto proyectado (`displayLocation`); si es mayor, en la posición cruda (desvío real — el re-ruteo de 50 m se encarga). Sin recorrido activo no hay proyección. Se descartó Google Roads API: la proyección local es determinística, gratuita y sin red.
+
+### Modo Navegación
+
+Opt-in con recorrido activo («Iniciar navegación» en la tarjeta; trazar la ruta no navega automáticamente):
+
+- **Cámara**: `NavigationCamera` usa `map.moveCamera({center, heading, zoom 17.5, tilt 45})` imperativo por fix (mapa no controlado, evita jitter de props controladas). El centro se adelanta 60 m en la dirección de avance para que el usuario quede en el tercio inferior. Requiere mapa vectorial (`PUBLIC_GOOGLE_MAP_ID`).
+- **Heading**: `coords.heading` del GPS con `speed > 1 m/s`; fallback a bearing entre posiciones snapeadas sucesivas (>3 m); se retiene el último rumbo válido al detenerse (evita brújula errática en semáforos).
+- **Gestos**: el mapa habilita rotación y tilt manuales (`headingInteractionEnabled` / `tiltInteractionEnabled`, gesto de dos dedos en mobile). Durante el follow, `dragstart` y los cambios manuales de heading/tilt (detectados comparando contra la última cámara comandada, con tolerancia de 1°) suspenden el seguimiento y muestran el chip «Recentrar», que lo reanuda.
+- **UI**: se oculta el bottom sheet/tarjeta (mobile) y el sidebar (desktop); un banner superior muestra destino, ETA y distancia del modo activo con botón de salida.
+- **Salidas**: botón del banner, cancelar recorrido, o llegada al destino. Al salir, la cámara restaura norte y tilt 0.
+
+### Llegada al destino
+
+Con recorrido activo, distancia al destino <25 m en 2 fixes consecutivos (disparo único por recorrido) activa la secuencia de arribo: cámara centra el destino (zoom 18, norte), el pin celebra con ondas expansivas + bounce (CSS, `motion-safe:`), y un banner «Llegaste a {farmacia}» cierra el recorrido tras 4 s o al tocarlo, reutilizando la lógica de cancelación (preserva `userLocation`, distancias y selección).
+
+### Proveedor de geolocalización y simulador (dev)
+
+La app nunca accede a `navigator.geolocation` directamente: consume un proveedor (`lib/geolocation.ts`) con interfaz `{ isSupported, getCurrentPosition, watchPosition, clearWatch }`.
+
+- `browserGeolocation`: delegado 1:1 al navegador (producción).
+- `simulatedGeolocation`: activo solo con `?sim` en la URL **y** build de desarrollo (`import.meta.env.DEV`). Al activarse un recorrido, el contexto le alimenta el `overview_path` de la ruta y el provider emite fixes a 1 Hz avanzando a 30 km/h (DRIVING) o 5 km/h (WALKING), con `heading`/`speed` sintéticos coherentes. Panel flotante (`SimulationPanel.tsx`): play/pausa, velocidad ×1/×4 y desvío lateral de 45 m (supera el umbral de snap para probar posición cruda y re-ruteo).
+
+Esto permite probar recorrido, re-ruteo, snap, modo navegación y llegada sin salir a la calle.
 
 ### Mapa
 

@@ -1,5 +1,8 @@
-## Requirements
+# pharmacy-detail-mobile-layout Specification
 
+## Purpose
+TBD - created by archiving change mobile-detail-card-redesign. Update Purpose after archive.
+## Requirements
 ### Requirement: Zona de datos separada de zona de acciones
 El card de detalle en mobile SHALL presentar nombre, dirección y badges en una zona superior separada visualmente de las acciones (teléfono, navegación) mediante dividers de ancho completo.
 
@@ -23,15 +26,17 @@ El teléfono SHALL presentarse como una fila de ancho completo con `href="tel:"`
 - **THEN** el dispositivo inicia una llamada al número de la farmacia
 
 ### Requirement: Toggle de modo de viaje inline con botón de navegación
-El toggle de modo de viaje (a pie / en auto) SHALL aparecer en la misma fila que el botón "Cómo llegar", a su izquierda, en lugar de en una columna separada.
+El selector de modo de viaje (a pie / en auto) SHALL presentarse como control segmentado. Sin recorrido activo SHALL mostrar solo los íconos, en la misma fila que el botón "Cómo llegar". Con recorrido activo SHALL mostrar la duración estimada de cada modo según la capacidad `route-eta`, ocupando su propia fila a ancho completo, con el botón "Cancelar recorrido" a ancho completo debajo (evita el wrap del texto del botón).
 
 #### Scenario: Selección de modo de viaje
-- **WHEN** el usuario toca el ícono de modo de viaje (🚶 o 🚗)
-- **THEN** el modo queda activo y el botón "Cómo llegar" usa ese modo al calcular la ruta
+- **WHEN** el usuario toca un segmento del selector (a pie o en auto)
+- **THEN** el modo queda activo y la ruta mostrada corresponde a ese modo
 
-### Requirement: Layout desktop sin cambios
-El layout de `PharmacyDetailCard` en desktop SHALL permanecer idéntico al estado previo a este cambio.
+#### Scenario: Selector compacto sin recorrido
+- **WHEN** no hay recorrido activo
+- **THEN** el selector muestra solo íconos junto al botón "Cómo llegar" en una única fila
 
-#### Scenario: Renderizado en sidebar desktop
-- **WHEN** el card se renderiza dentro del sidebar de desktop
-- **THEN** mantiene el layout en dos columnas con toggle a la derecha y teléfono inline entre los badges
+#### Scenario: Selector con tiempos durante el recorrido
+- **WHEN** hay recorrido activo con resultados disponibles
+- **THEN** el selector ocupa una fila completa con ícono y duración por modo, y el botón de cancelar aparece debajo a ancho completo sin salto de línea en su texto
+
