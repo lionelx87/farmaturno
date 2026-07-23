@@ -111,7 +111,8 @@ Durante un recorrido activo, cada posición GPS se proyecta sobre la polilínea 
 
 Opt-in con recorrido activo («Iniciar navegación» en la tarjeta; trazar la ruta no navega automáticamente):
 
-- **Cámara**: `NavigationCamera` usa `map.moveCamera({center, heading, zoom 17.5, tilt 45})` imperativo por fix (mapa no controlado, evita jitter de props controladas). El centro se adelanta 60 m en la dirección de avance para que el usuario quede en el tercio inferior. Requiere mapa vectorial (`PUBLIC_GOOGLE_MAP_ID`).
+- **Cámara**: `NavigationCamera` usa `map.moveCamera({center, heading, zoom 17.5, tilt 45})` imperativo por fix (mapa no controlado, evita jitter de props controladas). El centro se adelanta 60 m en la dirección de avance para que el usuario quede en el tercio inferior.
+- **Renderizado vectorial forzado**: heading/tilt solo funcionan en mapas vectoriales, y el Map ID del proyecto está configurado como raster en la consola de Google Cloud (sin `renderingType` explícito manda la config cloud y la rotación se ignora silenciosamente). El `<Map>` fuerza `renderingType: VECTOR`, con fallback automático a raster en dispositivos sin soporte WebGL.
 - **Heading**: `coords.heading` del GPS con `speed > 1 m/s`; fallback a bearing entre posiciones snapeadas sucesivas (>3 m); se retiene el último rumbo válido al detenerse (evita brújula errática en semáforos).
 - **Gestos**: el mapa habilita rotación y tilt manuales (`headingInteractionEnabled` / `tiltInteractionEnabled`, gesto de dos dedos en mobile). Durante el follow, `dragstart` y los cambios manuales de heading/tilt (detectados comparando contra la última cámara comandada, con tolerancia de 1°) suspenden el seguimiento y muestran el chip «Recentrar», que lo reanuda.
 - **UI**: se oculta el bottom sheet/tarjeta (mobile) y el sidebar (desktop); un banner superior muestra destino, ETA y distancia del modo activo con botón de salida.
