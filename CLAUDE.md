@@ -62,13 +62,20 @@ Este proyecto busca que el desarrollador entienda y controle cada decisión. Las
 
 ```
 src/
-├── styles/global.css         ← Tailwind + dark mode variant
+├── styles/global.css         ← Tailwind + dark mode variant + keyframes
 ├── layouts/Layout.astro      ← layout base, importa global.css, clase dark en <html>
 ├── pages/index.astro         ← única página
 ├── components/
-│   ├── PharmacyMap.tsx       ← island React (mapa + wrapper)
-│   └── Sidebar.tsx           ← sidebar desktop / bottom sheet mobile
-├── lib/pharmacies.ts         ← fetch al endpoint + caché diario
+│   ├── PharmacyMap.tsx       ← island React (mapa, cámara de navegación, llegada)
+│   ├── PharmacyAppContext.tsx ← estado global del island (fechas, rutas, navegación)
+│   ├── Sidebar.tsx           ← sidebar desktop / bottom sheet mobile
+│   └── SimulationPanel.tsx   ← panel del simulador de desplazamiento (dev)
+├── lib/
+│   ├── pharmacies.ts         ← fetch al endpoint + caché diario
+│   ├── places.ts             ← teléfono y coordenadas vía Google Places
+│   ├── distance.ts           ← distancias haversine para chips
+│   ├── route-geometry.ts     ← proyección sobre polilínea, bearing, desplazamientos
+│   └── geolocation.ts        ← proveedor de geolocalización (real + simulado con ?sim)
 └── types/pharmacy.ts         ← tipos TypeScript del dominio
 ```
 
