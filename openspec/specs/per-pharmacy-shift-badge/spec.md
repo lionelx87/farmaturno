@@ -1,3 +1,7 @@
+# per-pharmacy-shift-badge Specification
+
+## Purpose
+TBD - created by archiving change improve-shift-time-messages. Update Purpose after archive.
 ## Requirements
 ### Requirement: Mostrar badge de cierre en farmacias durante la ventana mix
 El sistema SHALL comunicar el horario de cierre durante la ventana mix (`isOvernightMix === true`) mediante encabezados de sección en la lista y mediante badge únicamente en el detail card.

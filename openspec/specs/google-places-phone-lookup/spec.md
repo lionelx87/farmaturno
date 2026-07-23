@@ -1,3 +1,7 @@
+# google-places-phone-lookup Specification
+
+## Purpose
+TBD - created by archiving change add-pharmacy-keyword-to-improve-google-places-phone-search. Update Purpose after archive.
 ## Requirements
 
 ### Requirement: Query de búsqueda incluye categoría farmacia

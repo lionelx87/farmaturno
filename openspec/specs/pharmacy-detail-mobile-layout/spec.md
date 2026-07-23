@@ -1,3 +1,7 @@
+# pharmacy-detail-mobile-layout Specification
+
+## Purpose
+TBD - created by archiving change mobile-detail-card-redesign. Update Purpose after archive.
 ## Requirements
 ### Requirement: Zona de datos separada de zona de acciones
 El card de detalle en mobile SHALL presentar nombre, dirección y badges en una zona superior separada visualmente de las acciones (teléfono, navegación) mediante dividers de ancho completo.

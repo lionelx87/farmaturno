@@ -1,3 +1,7 @@
+# directions-cancel Specification
+
+## Purpose
+TBD - created by archiving change directions-cancel-button. Update Purpose after archive.
 ## Requirements
 ### Requirement: Botón muta según estado del recorrido
 El sistema SHALL mostrar el botón "Cómo llegar" cuando no hay recorrido activo (`routeOrigin === null`), y el botón "Cancelar recorrido" cuando hay un recorrido activo (`routeOrigin !== null`).
@@ -46,4 +50,15 @@ El sistema SHALL trazar un recorrido únicamente como consecuencia de "Cómo lle
 #### Scenario: Cómo llegar reutiliza la ubicación existente
 - **WHEN** el usuario ya concedió ubicación y presiona "Cómo llegar"
 - **THEN** el recorrido se traza de inmediato sin nueva solicitud de permiso
+
+### Requirement: Layout estable del botón de recorrido
+El botón «Cómo llegar» SHALL mantener dimensiones estables en todos sus estados. Durante la obtención de ubicación, el botón SHALL mostrar un indicador de progreso con un texto corto en una sola línea («Ubicando…»), sin desbordar ni romper la fila que comparte con el selector de modo de viaje en ninguna resolución soportada.
+
+#### Scenario: Estado de carga sin quiebre visual
+- **WHEN** el usuario toca «Cómo llegar» y la ubicación está siendo obtenida
+- **THEN** el botón muestra spinner y «Ubicando…» en una línea, conservando la altura y sin desbordar la fila
+
+#### Scenario: Pantalla angosta
+- **WHEN** el estado de carga se muestra en un viewport angosto (~320 px)
+- **THEN** el botón y el selector de modo permanecen alineados en la misma fila sin overflow horizontal
 
