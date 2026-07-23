@@ -10,7 +10,8 @@ Aplicación web que reemplaza la experiencia de buscar qué farmacia está de tu
 
 - 🗺️ **Mapa interactivo** con pins por cada farmacia de turno del día
 - 📅 **Selector de fecha** para consultar hasta 2 días adelante o 7 días atrás
-- 🧭 **Ruta navegable** desde tu ubicación hasta la farmacia seleccionada
+- 🧭 **Ruta navegable** desde tu ubicación hasta la farmacia seleccionada, con distancias en vivo
+- 🚗 **Modo navegación** inmersivo: cámara que sigue tu rumbo (rotación + tilt 3D), posición ajustada a la ruta y animación de llegada al destino
 - 📞 **Teléfono directo** para llamar con un toque (obtenido via Google Places API)
 - 📱 **Diseño responsive**: sidebar en desktop, bottom sheet deslizable en mobile
 - 🌙 **Dark / light mode** con toggle en la interfaz
@@ -90,6 +91,20 @@ pnpm dev
 
 La app corre en `http://localhost:4321`.
 
+### 🛰️ Simulador de desplazamiento
+
+Para probar recorridos, re-ruteo, modo navegación y llegada **sin salir a la calle**, abrí la app con el parámetro `sim`:
+
+```
+http://localhost:4321/?sim
+```
+
+Esto reemplaza el GPS real por un proveedor simulado (solo en desarrollo — en producción el parámetro se ignora):
+
+- La posición inicial es el centro de Bariloche; al trazar un recorrido, la posición avanza por la ruta a 30 km/h (auto) o 5 km/h (a pie), emitiendo rumbo y velocidad coherentes.
+- Un panel flotante `SIM` permite **pausar/reanudar**, alternar velocidad **×1/×4** y activar un **desvío lateral** de 45 m para probar el snap a la ruta y el re-ruteo.
+- Al llegar al final de la ruta se dispara el flujo de llegada, igual que con GPS real.
+
 ---
 
 ## 🧞 Comandos
@@ -107,13 +122,20 @@ La app corre en `http://localhost:4321`.
 
 ```
 src/
-├── styles/global.css         ← Tailwind + dark mode variant
+├── styles/global.css         ← Tailwind + dark mode variant + keyframes
 ├── layouts/Layout.astro      ← Layout base
 ├── pages/index.astro         ← Única página
 ├── components/
-│   ├── PharmacyMap.tsx       ← Island React principal (mapa + estado global)
-│   └── Sidebar.tsx           ← Panel de farmacias (sidebar / bottom sheet)
-├── lib/pharmacies.ts         ← Fetch al endpoint + caché diario
+│   ├── PharmacyMap.tsx       ← Island React (mapa, cámara de navegación, llegada)
+│   ├── PharmacyAppContext.tsx ← Estado global del island (fechas, rutas, navegación)
+│   ├── Sidebar.tsx           ← Panel de farmacias (sidebar / bottom sheet)
+│   └── SimulationPanel.tsx   ← Panel del simulador de desplazamiento (dev)
+├── lib/
+│   ├── pharmacies.ts         ← Fetch al endpoint + caché diario
+│   ├── places.ts             ← Teléfono y coordenadas vía Google Places
+│   ├── distance.ts           ← Distancias haversine para chips
+│   ├── route-geometry.ts     ← Proyección sobre polilínea, bearing, desplazamientos
+│   └── geolocation.ts        ← Proveedor de geolocalización (real + simulado con ?sim)
 └── types/pharmacy.ts         ← Tipos TypeScript del dominio
 ```
 
