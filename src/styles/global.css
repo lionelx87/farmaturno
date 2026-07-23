@@ -6,3 +6,17 @@
   --font-brand: 'Syne', sans-serif;
   --font-sans: 'DM Sans', sans-serif;
 }
+
+@keyframes arrival-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.9);
+  }
+  60% {
+    transform: translateY(2px) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
