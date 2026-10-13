@@ -39,6 +39,8 @@ Los datos de turno no cambian dentro de un mismo día. Una vez obtenidos, son v�
 
 **Consecuencia importante:** el servidor nunca llama al endpoint externo más de una vez por día, independientemente de cuántos usuarios accedan a la app.
 
+**Falla del endpoint:** si el fetch falla, `index.astro` atrapa el error, responde **503** y renderiza una pantalla estática de "no disponible" sin montar el island. Sin datos la app no tiene utilidad, por lo que no se intenta un mapa vacío. El endpoint (barilochense.com, detrás de Cloudflare) bloquea las IPs de datacenter de Vercel con 403 desde octubre 2026; no se resuelve cambiando región ni headers.
+
 ### Filtrado client-side
 
 Una vez que el servidor entrega los datos al cliente (ya filtrados del cache), **todo el filtrado por fecha ocurre en el navegador**, sin ningún llamado adicional al servidor ni al endpoint externo.
@@ -174,6 +176,7 @@ Usuario accede a la app
 Astro Server: ¿hay datos en caché del día?
    ├── Sí → entrega datos cacheados al client island
    └── No → fetch al endpoint externo → cachea → entrega al client island
+                 └── Falla → 503 + pantalla "no disponible" (sin island)
                                 │
                                 ▼
                     Client Island (React 19)

@@ -2,10 +2,26 @@
 import Layout from '../layouts/Layout.astro';
 import PharmacyMap from '../components/PharmacyMap';
 import { fetchPharmacies } from '../lib/pharmacies';
+import type { Pharmacy } from '../types/pharmacy';
 
-const pharmacies = await fetchPharmacies();
+let pharmacies: Pharmacy[] | null = null;
+try {
+  pharmacies = await fetchPharmacies();
+} catch (error) {
+  console.error(error);
+  Astro.response.status = 503;
+}
 ---
 
 <Layout>
-  <PharmacyMap pharmacies={pharmacies} client:load />
+  {pharmacies ? (
+    <PharmacyMap pharmacies={pharmacies} client:load />
+  ) : (
+    <main class="min-h-dvh flex flex-col items-center justify-center gap-3 px-6 text-center bg-white dark:bg-gray-950">
+      <h1 class="font-brand text-2xl font-bold text-gray-900 dark:text-gray-100">Farmaturno</h1>
+      <p class="max-w-sm text-sm text-gray-500 dark:text-gray-400">
+        No pudimos obtener las farmacias de turno en este momento. Intentá de nuevo más tarde.
+      </p>
+    </main>
+  )}
 </Layout>
